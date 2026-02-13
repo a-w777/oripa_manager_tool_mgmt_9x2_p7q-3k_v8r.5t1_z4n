@@ -159,199 +159,209 @@
     </main>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+        // TODO: Add SDKs for Firebase products that you want to use
+        // https://firebase.google.com/docs/web/setup#available-libraries
 
-        // Firebase Setup
-        const firebaseConfig = JSON.parse(__firebase_config);
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDyblCmPzgaK0hhmGMnvvmm1O7LksLaySk",
+            authDomain: "my-managertool-project.firebaseapp.com",
+            projectId: "my-managertool-project",
+            storageBucket: "my-managertool-project.firebasestorage.app",
+            messagingSenderId: "44256475690",
+            appId: "1:44256475690:web:5ac7faa743b06c0a3ee153"
+        };
+
+        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'oripa-pro-cloud-v4';
+    </script>
+    // --- Core Logic ---
 
-        let user = null;
-        let records = [];
+    const init = async () => {
+    try {
+    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+    await signInWithCustomToken(auth, __initial_auth_token);
+    } else {
+    await signInAnonymously(auth);
+    }
+    } catch (err) {
+    console.error("Auth Error:", err);
+    }
+    };
 
-        // --- Core Logic ---
+    onAuthStateChanged(auth, (u) => {
+    if (u) {
+    user = u;
+    document.getElementById('user_display').innerText = `User: ${u.uid.substring(0, 8)}`;
+    document.getElementById('user_display').classList.remove('hidden');
+    startSync();
+    }
+    });
 
-        const init = async () => {
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            } catch (err) {
-                console.error("Auth Error:", err);
-            }
-        };
+    function startSync() {
+    if (!user) return;
+    // RULE 1: Private user path
+    const colRef = collection(db, 'artifacts', appId, 'users', user.uid, 'records');
 
-        onAuthStateChanged(auth, (u) => {
-            if (u) {
-                user = u;
-                document.getElementById('user_display').innerText = `User: ${u.uid.substring(0, 8)}`;
-                document.getElementById('user_display').classList.remove('hidden');
-                startSync();
-            }
-        });
+    onSnapshot(colRef, (snapshot) => {
+    records = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+    .sort((a, b) => parseInt(b.id) - parseInt(a.id));
 
-        function startSync() {
-            if (!user) return;
-            // RULE 1: Private user path
-            const colRef = collection(db, 'artifacts', appId, 'users', user.uid, 'records');
+    setupMonthFilter();
+    renderUI();
+    document.getElementById('loader').style.opacity = '0';
+    setTimeout(() => document.getElementById('loader').style.display = 'none', 500);
+    }, (err) => {
+    console.error("Firestore Error:", err);
+    });
+    }
 
-            onSnapshot(colRef, (snapshot) => {
-                records = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-                    .sort((a, b) => parseInt(b.id) - parseInt(a.id));
+    async function saveRecord(e) {
+    e.preventDefault();
+    if (!user) return;
 
-                setupMonthFilter();
-                renderUI();
-                document.getElementById('loader').style.opacity = '0';
-                setTimeout(() => document.getElementById('loader').style.display = 'none', 500);
-            }, (err) => {
-                console.error("Firestore Error:", err);
-            });
-        }
+    const editId = document.getElementById('editing_id').value;
+    const docId = editId || `${Date.now()}`;
+    const docRef = doc(db, 'artifacts', appId, 'users', user.uid, 'records', docId);
 
-        async function saveRecord(e) {
-            e.preventDefault();
-            if (!user) return;
+    const data = {
+    date: editId ? records.find(r => r.id === editId).date : new Date().toLocaleDateString('ja-JP'),
+    service: document.getElementById('serviceName').value.trim(),
+    cash: parseInt(document.getElementById('cashAmount').value) || 0,
+    added: parseInt(document.getElementById('addedPoints').value) || 0,
+    spent: parseInt(document.getElementById('spentPoints').value) || 0,
+    won: parseInt(document.getElementById('winPoints').value) || 0,
+    prize: document.getElementById('highPrize').value.trim(),
+    updatedAt: new Date().toISOString()
+    };
 
-            const editId = document.getElementById('editing_id').value;
-            const docId = editId || `${Date.now()}`;
-            const docRef = doc(db, 'artifacts', appId, 'users', user.uid, 'records', docId);
+    try {
+    await setDoc(docRef, data, { merge: true });
+    resetForm();
+    } catch (err) {
+    alert("保存に失敗しました。");
+    }
+    }
 
-            const data = {
-                date: editId ? records.find(r => r.id === editId).date : new Date().toLocaleDateString('ja-JP'),
-                service: document.getElementById('serviceName').value.trim(),
-                cash: parseInt(document.getElementById('cashAmount').value) || 0,
-                added: parseInt(document.getElementById('addedPoints').value) || 0,
-                spent: parseInt(document.getElementById('spentPoints').value) || 0,
-                won: parseInt(document.getElementById('winPoints').value) || 0,
-                prize: document.getElementById('highPrize').value.trim(),
-                updatedAt: new Date().toISOString()
-            };
+    window.deleteRecord = async (id) => {
+    if (!user || !confirm("クラウドからこの記録を削除しますか？")) return;
+    const docRef = doc(db, 'artifacts', appId, 'users', user.uid, 'records', String(id));
+    await deleteDoc(docRef);
+    };
 
-            try {
-                await setDoc(docRef, data, { merge: true });
-                resetForm();
-            } catch (err) {
-                alert("保存に失敗しました。");
-            }
-        }
+    window.editRecord = (id) => {
+    const r = records.find(rec => rec.id == id);
+    if (!r) return;
+    document.getElementById('editing_id').value = r.id;
+    document.getElementById('serviceName').value = r.service;
+    document.getElementById('cashAmount').value = r.cash;
+    document.getElementById('addedPoints').value = r.added;
+    document.getElementById('spentPoints').value = r.spent;
+    document.getElementById('winPoints').value = r.won;
+    document.getElementById('highPrize').value = r.prize;
+    document.getElementById('submitBtn').innerText = "クラウドのデータを修正";
+    document.getElementById('form_title').innerText = "✏️ 記録の編集";
+    document.getElementById('cancelEdit').classList.remove('hidden');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
 
-        window.deleteRecord = async (id) => {
-            if (!user || !confirm("クラウドからこの記録を削除しますか？")) return;
-            const docRef = doc(db, 'artifacts', appId, 'users', user.uid, 'records', String(id));
-            await deleteDoc(docRef);
-        };
+    function resetForm() {
+    document.getElementById('recordForm').reset();
+    document.getElementById('editing_id').value = "";
+    document.getElementById('submitBtn').innerText = "クラウドへ保存";
+    document.getElementById('form_title').innerText = "📥 今日の記録";
+    document.getElementById('cancelEdit').classList.add('hidden');
+    }
 
-        window.editRecord = (id) => {
-            const r = records.find(rec => rec.id == id);
-            if (!r) return;
-            document.getElementById('editing_id').value = r.id;
-            document.getElementById('serviceName').value = r.service;
-            document.getElementById('cashAmount').value = r.cash;
-            document.getElementById('addedPoints').value = r.added;
-            document.getElementById('spentPoints').value = r.spent;
-            document.getElementById('winPoints').value = r.won;
-            document.getElementById('highPrize').value = r.prize;
-            document.getElementById('submitBtn').innerText = "クラウドのデータを修正";
-            document.getElementById('form_title').innerText = "✏️ 記録の編集";
-            document.getElementById('cancelEdit').classList.remove('hidden');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        };
+    function setupMonthFilter() {
+    const months = new Set();
+    const now = new Date();
+    const currentM = `${now.getFullYear()}/${now.getMonth() + 1}`;
+    months.add(currentM);
+    records.forEach(r => {
+    const parts = r.date.split('/');
+    months.add(`${parts[0]}/${parseInt(parts[1])}`);
+    });
+    const filter = document.getElementById('monthFilter');
+    const oldVal = filter.value;
+    filter.innerHTML = Array.from(months).sort().reverse().map(m => `<option value="${m}">${m.split('/')[0]}年
+        ${m.split('/')[1]}月</option>`).join('');
+    filter.value = oldVal || currentM;
+    }
 
-        function resetForm() {
-            document.getElementById('recordForm').reset();
-            document.getElementById('editing_id').value = "";
-            document.getElementById('submitBtn').innerText = "クラウドへ保存";
-            document.getElementById('form_title').innerText = "📥 今日の記録";
-            document.getElementById('cancelEdit').classList.add('hidden');
-        }
+    function renderUI() {
+    const filter = document.getElementById('monthFilter');
+    const selectedMonth = filter.value;
+    const balances = {};
+    let totalLifetimeCash = 0;
+    let monthlyCash = 0;
+    let monthlyPrizes = 0;
+    const now = new Date();
+    const currentMonthStr = `${now.getFullYear()}/${now.getMonth() + 1}`;
 
-        function setupMonthFilter() {
-            const months = new Set();
-            const now = new Date();
-            const currentM = `${now.getFullYear()}/${now.getMonth() + 1}`;
-            months.add(currentM);
-            records.forEach(r => {
-                const parts = r.date.split('/');
-                months.add(`${parts[0]}/${parseInt(parts[1])}`);
-            });
-            const filter = document.getElementById('monthFilter');
-            const oldVal = filter.value;
-            filter.innerHTML = Array.from(months).sort().reverse().map(m => `<option value="${m}">${m.split('/')[0]}年 ${m.split('/')[1]}月</option>`).join('');
-            filter.value = oldVal || currentM;
-        }
+    records.forEach(r => {
+    if (!balances[r.service]) balances[r.service] = 0;
+    balances[r.service] += (r.added + r.won - r.spent);
+    totalLifetimeCash += r.cash;
+    });
 
-        function renderUI() {
-            const filter = document.getElementById('monthFilter');
-            const selectedMonth = filter.value;
-            const balances = {};
-            let totalLifetimeCash = 0;
-            let monthlyCash = 0;
-            let monthlyPrizes = 0;
-            const now = new Date();
-            const currentMonthStr = `${now.getFullYear()}/${now.getMonth() + 1}`;
+    const filtered = records.filter(r => {
+    const parts = r.date.split('/');
+    const rMonth = `${parts[0]}/${parseInt(parts[1])}`;
+    if (rMonth === selectedMonth) {
+    monthlyCash += r.cash;
+    if (r.prize) monthlyPrizes++;
+    return true;
+    }
+    return false;
+    });
 
-            records.forEach(r => {
-                if (!balances[r.service]) balances[r.service] = 0;
-                balances[r.service] += (r.added + r.won - r.spent);
-                totalLifetimeCash += r.cash;
-            });
+    const currentMonthInvested = records.reduce((acc, r) => {
+    const parts = r.date.split('/');
+    return (`${parts[0]}/${parseInt(parts[1])}` === currentMonthStr) ? acc + r.cash : acc;
+    }, 0);
 
-            const filtered = records.filter(r => {
-                const parts = r.date.split('/');
-                const rMonth = `${parts[0]}/${parseInt(parts[1])}`;
-                if (rMonth === selectedMonth) {
-                    monthlyCash += r.cash;
-                    if (r.prize) monthlyPrizes++;
-                    return true;
-                }
-                return false;
-            });
+    // Update DOM
+    document.getElementById('stat_monthly_cash').innerText = `¥${monthlyCash.toLocaleString()}`;
+    document.getElementById('stat_monthly_prizes').innerText = monthlyPrizes;
+    document.getElementById('stat_total_cash').innerText = `¥${totalLifetimeCash.toLocaleString()}`;
+    document.getElementById('monthly_invested_header').innerText = `今月の投資: ¥${currentMonthInvested.toLocaleString()}`;
+    document.getElementById('label_monthly_cash').innerText = `${selectedMonth.split('/')[1]}月の支払額`;
 
-            const currentMonthInvested = records.reduce((acc, r) => {
-                const parts = r.date.split('/');
-                return (`${parts[0]}/${parseInt(parts[1])}` === currentMonthStr) ? acc + r.cash : acc;
-            }, 0);
+    document.getElementById('historyBody').innerHTML = filtered.map(r => {
+    const net = (r.added + r.won) - r.spent;
+    return `
+    <tr class="hover:bg-slate-50 transition">
+        <td class="p-4 text-[10px] text-slate-400 font-mono">${r.date}</td>
+        <td class="p-4 font-bold text-slate-700">${r.service}</td>
+        <td class="p-4 text-center text-rose-500 font-bold">¥${r.cash.toLocaleString()}</td>
+        <td class="p-4 text-center">
+            <div class="text-[10px] font-bold ${net >= 0 ? 'text-emerald-600' : 'text-slate-400'}">差引: ${net > 0 ? '+' :
+                ''}${net.toLocaleString()} pts</div>
+            <div
+                class="text-[10px] ${r.prize ? 'text-amber-600 font-bold bg-amber-50 rounded px-1' : 'text-slate-300'}">
+                ${r.prize || '---'}</div>
+        </td>
+        <td class="p-4 text-right space-x-3">
+            <button onclick="editRecord('${r.id}')" class="text-indigo-500 hover:text-indigo-700">修正</button>
+            <button onclick="deleteRecord('${r.id}')" class="text-slate-300 hover:text-red-500 font-bold">×</button>
+        </td>
+    </tr>
+    `;
+    }).join('');
 
-            // Update DOM
-            document.getElementById('stat_monthly_cash').innerText = `¥${monthlyCash.toLocaleString()}`;
-            document.getElementById('stat_monthly_prizes').innerText = monthlyPrizes;
-            document.getElementById('stat_total_cash').innerText = `¥${totalLifetimeCash.toLocaleString()}`;
-            document.getElementById('monthly_invested_header').innerText = `今月の投資: ¥${currentMonthInvested.toLocaleString()}`;
-            document.getElementById('label_monthly_cash').innerText = `${selectedMonth.split('/')[1]}月の支払額`;
+    document.getElementById('service_balances').innerHTML = Object.entries(balances).sort((a, b) => b[1] -
+    a[1]).map(([n, b]) => `
+    <div class="flex justify-between items-center bg-slate-50 p-2.5 rounded-lg border border-slate-100 mb-1">
+        <span class="font-bold text-slate-600">${n}</span>
+        <span class="font-mono text-indigo-600 font-bold">${b.toLocaleString()} pts</span>
+    </div>
+    `).join('');
 
-            document.getElementById('historyBody').innerHTML = filtered.map(r => {
-                const net = (r.added + r.won) - r.spent;
-                return `
-                    <tr class="hover:bg-slate-50 transition">
-                        <td class="p-4 text-[10px] text-slate-400 font-mono">${r.date}</td>
-                        <td class="p-4 font-bold text-slate-700">${r.service}</td>
-                        <td class="p-4 text-center text-rose-500 font-bold">¥${r.cash.toLocaleString()}</td>
-                        <td class="p-4 text-center">
-                            <div class="text-[10px] font-bold ${net >= 0 ? 'text-emerald-600' : 'text-slate-400'}">差引: ${net > 0 ? '+' : ''}${net.toLocaleString()} pts</div>
-                            <div class="text-[10px] ${r.prize ? 'text-amber-600 font-bold bg-amber-50 rounded px-1' : 'text-slate-300'}">${r.prize || '---'}</div>
-                        </td>
-                        <td class="p-4 text-right space-x-3">
-                            <button onclick="editRecord('${r.id}')" class="text-indigo-500 hover:text-indigo-700">修正</button>
-                            <button onclick="deleteRecord('${r.id}')" class="text-slate-300 hover:text-red-500 font-bold">×</button>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-
-            document.getElementById('service_balances').innerHTML = Object.entries(balances).sort((a, b) => b[1] - a[1]).map(([n, b]) => `
-                <div class="flex justify-between items-center bg-slate-50 p-2.5 rounded-lg border border-slate-100 mb-1">
-                    <span class="font-bold text-slate-600">${n}</span>
-                    <span class="font-mono text-indigo-600 font-bold">${b.toLocaleString()} pts</span>
-                </div>
-            `).join('');
-
-            document.getElementById('service_suggestions').innerHTML = Object.keys(balances).map(n => `<option value="${n}">`).join('');
+    document.getElementById('service_suggestions').innerHTML = Object.keys(balances).map(n => `<option value="${n}">
+        `).join('');
         }
 
         // Event Listeners
@@ -359,18 +369,19 @@
         document.getElementById('cancelEdit').addEventListener('click', resetForm);
         document.getElementById('monthFilter').addEventListener('change', renderUI);
         document.getElementById('exportCsv').addEventListener('click', () => {
-            if (records.length === 0) return;
-            let csv = "日付,サービス,支払金額,付与Pts,消費Pts,当選Pts,景品\n";
-            records.forEach(r => csv += `"${r.date}","${r.service}",${r.cash},${r.added},${r.spent},${r.won},"${r.prize}"\n`);
-            const blob = new Blob(["\ufeff" + csv], { type: 'text/csv' });
-            const a = document.createElement("a");
-            a.href = URL.createObjectURL(blob);
-            a.download = `oripa_backup_${new Date().toISOString().split('T')[0]}.csv`;
-            a.click();
+        if (records.length === 0) return;
+        let csv = "日付,サービス,支払金額,付与Pts,消費Pts,当選Pts,景品\n";
+        records.forEach(r => csv +=
+        `"${r.date}","${r.service}",${r.cash},${r.added},${r.spent},${r.won},"${r.prize}"\n`);
+        const blob = new Blob(["\ufeff" + csv], { type: 'text/csv' });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = `oripa_backup_${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
         });
 
         init();
-    </script>
+        </script>
 </body>
 
 </html>
