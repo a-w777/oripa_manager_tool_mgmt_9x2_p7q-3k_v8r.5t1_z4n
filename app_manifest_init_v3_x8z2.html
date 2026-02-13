@@ -93,7 +93,6 @@
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Form -->
             <div class="lg:col-span-1">
                 <div class="card">
                     <h2 class="text-lg font-bold mb-4 flex justify-between">
@@ -142,7 +141,6 @@
                 </div>
             </div>
 
-            <!-- Table -->
             <div class="lg:col-span-2 card !p-0 overflow-hidden">
                 <div class="p-4 border-b bg-slate-50 flex justify-between items-center">
                     <select id="monthFilter"
@@ -185,12 +183,11 @@
         };
         // ==========================================================
 
-        const firebaseConfig = JSON.parse(__firebase_config);
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
         const provider = new GoogleAuthProvider();
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'oripa-pro-cloud-google-v1';
+        const appId = 'oripa-pro-cloud-google-v1';
 
         let user = null;
         let records = [];
@@ -207,6 +204,7 @@
             timeLeft = TIMEOUT_MS;
             logoutTimer = setTimeout(() => {
                 signOut(auth).then(() => {
+                    alert("30分間操作がなかったためログアウトしました。");
                     location.reload();
                 });
             }, TIMEOUT_MS);
@@ -245,29 +243,27 @@
         });
 
         document.getElementById('googleLoginBtn').addEventListener('click', () => signInWithPopup(auth, provider));
-        document.getElementById('logoutBtn').addEventListener('click', () => { signOut(auth).then(() => location.reload()); });
+        document.getElementById('logoutBtn').addEventListener('click', () => { if (confirm("ログアウトしますか？")) signOut(auth).then(() => location.reload()); });
 
         function startSync() {
             if (!user) return;
             const colRef = collection(db, 'artifacts', appId, 'users', user.uid, 'records');
             unsubscribeSync = onSnapshot(colRef, (snapshot) => {
-                // ID（タイムスタンプ）の昇順（古い順）に一度ソートして残高を計算しやすくする
                 const rawRecords = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
                     .sort((a, b) => parseInt(a.id) - parseInt(b.id));
 
-                // サービスごとの残高推移を計算
                 const serviceBalMap = {};
                 records = rawRecords.map(r => {
                     serviceBalMap[r.service] = (serviceBalMap[r.service] || 0) + (r.added + (r.won || 0) - (r.spent || 0));
                     return { ...r, runningBalance: serviceBalMap[r.service] };
-                }).reverse(); // 表示は新しい順にする
+                }).reverse();
 
                 setupMonthFilter();
                 renderUI();
                 document.getElementById('auth_overlay').style.opacity = '0';
                 setTimeout(() => { if (user) document.getElementById('auth_overlay').style.display = 'none'; }, 500);
                 document.getElementById('app_content').classList.remove('opacity-0');
-            }, (err) => console.error(err));
+            });
         }
 
         async function saveRecord(e) {
@@ -305,7 +301,7 @@
 
         window.deleteRecord = async (id) => {
             if (!user) return;
-            await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'records', String(id)));
+            if (confirm("削除しますか？")) await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'records', String(id)));
         };
 
         function resetForm() {
@@ -329,10 +325,8 @@
             const currentBalances = {};
             let totalCash = 0, monthCash = 0, monthPrizes = 0;
 
-            // recordsは降順（新しい順）
             records.forEach(r => {
                 if (!currentBalances[r.service]) {
-                    // 降順の最初の要素がそのサービスの「現在」の最新残高
                     currentBalances[r.service] = r.runningBalance;
                 }
                 totalCash += r.cash;
