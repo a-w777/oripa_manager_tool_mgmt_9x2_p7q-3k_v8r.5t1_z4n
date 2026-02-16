@@ -17,12 +17,27 @@
         .card { @apply bg-white p-6 rounded-2xl shadow-md border border-slate-200; }
         .input-field { @apply w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-indigo-500 transition; }
         
-        /* Calendar Styles */
-        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; @apply bg-slate-200 border border-slate-200 rounded-lg overflow-hidden; }
-        .calendar-day { @apply bg-white p-2 min-h-[70px] text-xs transition hover:bg-slate-50 relative; }
-        .calendar-header { @apply bg-slate-50 p-2 text-center text-[10px] font-bold text-slate-400 uppercase; }
-        .calendar-tag { @apply block truncate px-1 py-0.5 mt-1 rounded text-[8px] font-bold bg-indigo-100 text-indigo-600 border border-indigo-200; }
-        .calendar-today { @apply bg-indigo-50; }
+        /* Calendar UI Styles */
+        .calendar-grid { 
+            display: grid; 
+            grid-template-columns: repeat(7, 1fr); 
+            @apply bg-slate-200 border-l border-t border-slate-200 rounded-xl overflow-hidden shadow-inner; 
+        }
+        .calendar-header { 
+            @apply bg-slate-100 p-2 text-center text-[10px] font-black text-slate-500 uppercase border-r border-b border-slate-200; 
+        }
+        .calendar-day { 
+            @apply bg-white p-1.5 min-h-[90px] text-xs transition border-r border-b border-slate-200 flex flex-col gap-1; 
+        }
+        .calendar-day:hover { @apply bg-slate-50; }
+        .calendar-tag { 
+            /* フォントサイズを現在の70%程度（約7px相当）に設定 */
+            font-size: 7px;
+            line-height: 1.2;
+            @apply block w-full px-1.5 py-0.5 rounded font-bold bg-indigo-50 text-indigo-600 border border-indigo-100 truncate; 
+        }
+        .calendar-today { @apply bg-indigo-50/50; }
+        .calendar-today .day-num { @apply bg-indigo-600 text-white rounded-full w-5 h-5 flex items-center justify-center; }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-800">
@@ -148,7 +163,7 @@
             </div>
         </div>
 
-        <!-- NEW: Analysis & Calendar Section -->
+        <!-- Analysis & Calendar Section -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-12">
             <!-- Utilization Calendar -->
             <div class="card">
@@ -257,7 +272,6 @@
                 const rawRecords = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
                     .sort((a, b) => parseInt(a.id) - parseInt(b.id));
                 
-                // Calculate Running Balance per Service
                 const serviceBalMap = {};
                 records = rawRecords.map(r => {
                     serviceBalMap[r.service] = (serviceBalMap[r.service] || 0) + (r.added + (r.won || 0) - (r.spent || 0));
@@ -342,22 +356,15 @@
             const selectedMonth = document.getElementById('monthFilter').value;
             const selectedService = document.getElementById('serviceFilter').value;
             const currentBalances = {};
-            const serviceSummary = {}; // For Analysis Chart
+            const serviceSummary = {};
             let totalCash = 0, monthCash = 0, monthPrizes = 0;
 
-            // Calculate overall stats and balances
             records.forEach(r => {
-                if (!currentBalances[r.service]) {
-                    currentBalances[r.service] = r.runningBalance;
-                }
-                if (!serviceSummary[r.service]) {
-                    serviceSummary[r.service] = { invest: 0, gain: 0, bal: r.runningBalance };
-                }
+                if (!currentBalances[r.service]) currentBalances[r.service] = r.runningBalance;
+                if (!serviceSummary[r.service]) serviceSummary[r.service] = { invest: 0, gain: 0, bal: r.runningBalance };
                 serviceSummary[r.service].invest += r.cash;
                 serviceSummary[r.service].gain += (r.added + (r.won || 0));
-
                 totalCash += r.cash;
-                
                 const p = r.date.split('/');
                 if(`${p[0]}/${parseInt(p[1])}` === selectedMonth) {
                     monthCash += r.cash;
@@ -370,12 +377,9 @@
             document.getElementById('stat_total_cash').innerText = `¥${totalCash.toLocaleString()}`;
             document.getElementById('label_month').innerText = `${selectedMonth.split('/')[1]}月の支払額`;
 
-            // Filter history
             const filtered = records.filter(r => {
                 const p = r.date.split('/');
-                const monthMatch = `${p[0]}/${parseInt(p[1])}` === selectedMonth;
-                const serviceMatch = selectedService === 'all' || r.service === selectedService;
-                return monthMatch && serviceMatch;
+                return `${p[0]}/${parseInt(p[1])}` === selectedMonth && (selectedService === 'all' || r.service === selectedService);
             });
 
             document.getElementById('historyBody').innerHTML = filtered.length ? filtered.map(r => `
@@ -387,14 +391,10 @@
                     </td>
                     <td class="p-4 text-center">
                         <span class="text-rose-500 font-bold">¥${r.cash.toLocaleString()}</span>
-                        ${r.added > 0 ? `<div class="text-[9px] text-emerald-500">+${r.added.toLocaleString()}pts</div>` : ''}
                     </td>
-                    <td class="p-4 text-center text-orange-500 font-medium">
-                        ${r.spent > 0 ? `-${r.spent.toLocaleString()}` : '-'}
-                    </td>
+                    <td class="p-4 text-center text-orange-500 font-medium">${r.spent > 0 ? `-${r.spent.toLocaleString()}` : '-'}</td>
                     <td class="p-4 text-center">
                         <div class="font-black text-indigo-600">${r.runningBalance.toLocaleString()} <span class="text-[10px]">pts</span></div>
-                        ${r.won > 0 ? `<div class="text-[9px] text-emerald-500 font-bold">当選 +${r.won.toLocaleString()}</div>` : ''}
                     </td>
                     <td class="p-4 text-right space-x-2">
                         <button onclick="editRecord('${r.id}')" class="text-indigo-600 text-xs font-bold">修正</button>
@@ -403,7 +403,6 @@
                 </tr>
             `).join('') : `<tr><td colspan="5" class="p-10 text-center text-slate-400">履歴がありません</td></tr>`;
 
-            // Balance Sidebar UI
             document.getElementById('service_balances').innerHTML = Object.entries(currentBalances).length ? Object.entries(currentBalances).sort((a,b)=>b[1]-a[1]).map(([n, b]) => `
                 <div class="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100 mb-2">
                     <span class="font-bold text-slate-600">${n}</span>
@@ -413,7 +412,6 @@
 
             document.getElementById('service_suggestions').innerHTML = Object.keys(currentBalances).map(n => `<option value="${n}">`).join('');
 
-            // Update Calendar and Chart
             renderCalendar(selectedMonth);
             renderChart(serviceSummary);
         }
@@ -428,28 +426,23 @@
             let html = ['日','月','火','水','木','金','土'].map(d => `<div class="calendar-header">${d}</div>`).join('');
             
             // Padding
-            for(let i=0; i<firstDay; i++) html += `<div class="calendar-day bg-slate-50/50"></div>`;
+            for(let i=0; i<firstDay; i++) html += `<div class="bg-slate-50/50 border-r border-b border-slate-200"></div>`;
             
             // Days
             for(let d=1; d<=lastDate; d++) {
-                const dateStr = `${y}/${m}/${d}`;
-                // Normalizing date search: Firestore might save as YYYY/M/D or YYYY/MM/DD
                 const dayRecords = records.filter(r => {
                     const p = r.date.split('/');
                     return parseInt(p[0]) === y && parseInt(p[1]) === m && parseInt(p[2]) === d;
                 });
 
                 const isToday = new Date().toLocaleDateString('ja-JP') === new Date(y, m-1, d).toLocaleDateString('ja-JP');
-                
-                // Get unique services for this day to show tags
                 const uniqueServices = [...new Set(dayRecords.map(r => r.service))];
 
                 html += `
                     <div class="calendar-day ${isToday ? 'calendar-today' : ''}">
-                        <div class="font-bold ${isToday ? 'text-indigo-600 underline' : 'text-slate-400'}">${d}</div>
-                        <div class="mt-1">
-                            ${uniqueServices.slice(0, 3).map(s => `<span class="calendar-tag">${s}</span>`).join('')}
-                            ${uniqueServices.length > 3 ? `<div class="text-[7px] text-slate-300 text-center mt-0.5">+他${uniqueServices.length-3}件</div>` : ''}
+                        <div class="day-num font-bold ${isToday ? '' : 'text-slate-400'}">${d}</div>
+                        <div class="flex flex-col gap-1 overflow-hidden">
+                            ${uniqueServices.map(s => `<span class="calendar-tag">${s}</span>`).join('')}
                         </div>
                     </div>
                 `;
@@ -460,7 +453,6 @@
         function renderChart(summary) {
             const ctx = document.getElementById('analysisChart').getContext('2d');
             const labels = Object.keys(summary);
-            
             if (analysisChart) analysisChart.destroy();
             if (labels.length === 0) return;
 
@@ -469,49 +461,18 @@
                 data: {
                     labels: labels,
                     datasets: [
-                        {
-                            label: '総投資額(円)',
-                            data: labels.map(l => summary[l].invest),
-                            backgroundColor: '#fb7185', // rose-400
-                            borderRadius: 4
-                        },
-                        {
-                            label: '累計獲得(pts)',
-                            data: labels.map(l => summary[l].gain),
-                            backgroundColor: '#34d399', // emerald-400
-                            borderRadius: 4
-                        },
-                        {
-                            label: '現在の残高',
-                            data: labels.map(l => summary[l].bal),
-                            backgroundColor: '#818cf8', // indigo-400
-                            borderRadius: 4
-                        }
+                        { label: '総投資(円)', data: labels.map(l => summary[l].invest), backgroundColor: '#fb7185', borderRadius: 4 },
+                        { label: '累計獲得(pts)', data: labels.map(l => summary[l].gain), backgroundColor: '#34d399', borderRadius: 4 },
+                        { label: '現在の残高', data: labels.map(l => summary[l].bal), backgroundColor: '#818cf8', borderRadius: 4 }
                     ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                font: { size: 10, weight: 'bold' },
-                                padding: 15,
-                                usePointStyle: true
-                            }
-                        }
-                    },
+                    plugins: { legend: { position: 'bottom', labels: { font: { size: 10, weight: 'bold' }, usePointStyle: true } } },
                     scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: { font: { size: 9 } },
-                            grid: { color: '#f1f5f9' }
-                        },
-                        x: {
-                            ticks: { font: { size: 10, weight: 'bold' } },
-                            grid: { display: false }
-                        }
+                        y: { beginAtZero: true, ticks: { font: { size: 9 } } },
+                        x: { ticks: { font: { size: 10, weight: 'bold' } } }
                     }
                 }
             });
