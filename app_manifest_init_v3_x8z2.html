@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>オリパ管理マネージャー Pro Cloud</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap');
         body { font-family: 'Noto Sans JP', sans-serif; }
@@ -15,6 +16,13 @@
         }
         .card { @apply bg-white p-6 rounded-2xl shadow-md border border-slate-200; }
         .input-field { @apply w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-indigo-500 transition; }
+        
+        /* Calendar Styles */
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; @apply bg-slate-200 border border-slate-200 rounded-lg overflow-hidden; }
+        .calendar-day { @apply bg-white p-2 min-h-[70px] text-xs transition hover:bg-slate-50 relative; }
+        .calendar-header { @apply bg-slate-50 p-2 text-center text-[10px] font-bold text-slate-400 uppercase; }
+        .calendar-tag { @apply block truncate px-1 py-0.5 mt-1 rounded text-[8px] font-bold bg-indigo-100 text-indigo-600 border border-indigo-200; }
+        .calendar-today { @apply bg-indigo-50; }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-800">
@@ -139,6 +147,27 @@
                 </div>
             </div>
         </div>
+
+        <!-- NEW: Analysis & Calendar Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-12">
+            <!-- Utilization Calendar -->
+            <div class="card">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-bold flex items-center gap-2">📅 利用カレンダー</h2>
+                    <div id="calendar_label" class="text-sm font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full"></div>
+                </div>
+                <div id="calendar_container" class="calendar-grid"></div>
+            </div>
+
+            <!-- Service Analysis Chart -->
+            <div class="card flex flex-col">
+                <h2 class="text-lg font-bold mb-4 flex items-center gap-2">📊 サービス別分析</h2>
+                <div class="flex-grow min-h-[300px] relative">
+                    <canvas id="analysisChart"></canvas>
+                </div>
+                <div class="mt-4 text-[10px] text-slate-400 italic">※累計の投資・獲得・現在のバランスを比較しています</div>
+            </div>
+        </div>
     </main>
 
     <script type="module">
@@ -167,6 +196,7 @@
         let user = null;
         let records = [];
         let unsubscribeSync = null;
+        let analysisChart = null;
 
         // Auto Logout Logic
         let logoutTimer;
@@ -312,6 +342,7 @@
             const selectedMonth = document.getElementById('monthFilter').value;
             const selectedService = document.getElementById('serviceFilter').value;
             const currentBalances = {};
+            const serviceSummary = {}; // For Analysis Chart
             let totalCash = 0, monthCash = 0, monthPrizes = 0;
 
             // Calculate overall stats and balances
@@ -319,6 +350,12 @@
                 if (!currentBalances[r.service]) {
                     currentBalances[r.service] = r.runningBalance;
                 }
+                if (!serviceSummary[r.service]) {
+                    serviceSummary[r.service] = { invest: 0, gain: 0, bal: r.runningBalance };
+                }
+                serviceSummary[r.service].invest += r.cash;
+                serviceSummary[r.service].gain += (r.added + (r.won || 0));
+
                 totalCash += r.cash;
                 
                 const p = r.date.split('/');
@@ -375,6 +412,109 @@
             `).join('') : `<p class="text-slate-400 text-xs italic text-center p-4">履歴から自動集計されます</p>`;
 
             document.getElementById('service_suggestions').innerHTML = Object.keys(currentBalances).map(n => `<option value="${n}">`).join('');
+
+            // Update Calendar and Chart
+            renderCalendar(selectedMonth);
+            renderChart(serviceSummary);
+        }
+
+        function renderCalendar(mStr) {
+            const [y, m] = mStr.split('/').map(Number);
+            document.getElementById('calendar_label').innerText = `${y}年 ${m}月`;
+            
+            const firstDay = new Date(y, m - 1, 1).getDay();
+            const lastDate = new Date(y, m, 0).getDate();
+            
+            let html = ['日','月','火','水','木','金','土'].map(d => `<div class="calendar-header">${d}</div>`).join('');
+            
+            // Padding
+            for(let i=0; i<firstDay; i++) html += `<div class="calendar-day bg-slate-50/50"></div>`;
+            
+            // Days
+            for(let d=1; d<=lastDate; d++) {
+                const dateStr = `${y}/${m}/${d}`;
+                // Normalizing date search: Firestore might save as YYYY/M/D or YYYY/MM/DD
+                const dayRecords = records.filter(r => {
+                    const p = r.date.split('/');
+                    return parseInt(p[0]) === y && parseInt(p[1]) === m && parseInt(p[2]) === d;
+                });
+
+                const isToday = new Date().toLocaleDateString('ja-JP') === new Date(y, m-1, d).toLocaleDateString('ja-JP');
+                
+                // Get unique services for this day to show tags
+                const uniqueServices = [...new Set(dayRecords.map(r => r.service))];
+
+                html += `
+                    <div class="calendar-day ${isToday ? 'calendar-today' : ''}">
+                        <div class="font-bold ${isToday ? 'text-indigo-600 underline' : 'text-slate-400'}">${d}</div>
+                        <div class="mt-1">
+                            ${uniqueServices.slice(0, 3).map(s => `<span class="calendar-tag">${s}</span>`).join('')}
+                            ${uniqueServices.length > 3 ? `<div class="text-[7px] text-slate-300 text-center mt-0.5">+他${uniqueServices.length-3}件</div>` : ''}
+                        </div>
+                    </div>
+                `;
+            }
+            document.getElementById('calendar_container').innerHTML = html;
+        }
+
+        function renderChart(summary) {
+            const ctx = document.getElementById('analysisChart').getContext('2d');
+            const labels = Object.keys(summary);
+            
+            if (analysisChart) analysisChart.destroy();
+            if (labels.length === 0) return;
+
+            analysisChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: '総投資額(円)',
+                            data: labels.map(l => summary[l].invest),
+                            backgroundColor: '#fb7185', // rose-400
+                            borderRadius: 4
+                        },
+                        {
+                            label: '累計獲得(pts)',
+                            data: labels.map(l => summary[l].gain),
+                            backgroundColor: '#34d399', // emerald-400
+                            borderRadius: 4
+                        },
+                        {
+                            label: '現在の残高',
+                            data: labels.map(l => summary[l].bal),
+                            backgroundColor: '#818cf8', // indigo-400
+                            borderRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                font: { size: 10, weight: 'bold' },
+                                padding: 15,
+                                usePointStyle: true
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { font: { size: 9 } },
+                            grid: { color: '#f1f5f9' }
+                        },
+                        x: {
+                            ticks: { font: { size: 10, weight: 'bold' } },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
         }
 
         document.getElementById('recordForm').addEventListener('submit', saveRecord);
