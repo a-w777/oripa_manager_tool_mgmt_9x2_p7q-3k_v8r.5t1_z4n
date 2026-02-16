@@ -17,34 +17,41 @@
         .card { @apply bg-white p-6 rounded-2xl shadow-md border border-slate-200; }
         .input-field { @apply w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-indigo-500 transition; }
         
-        /* Calendar UI Styles - Fixed & Boxed */
+        /* Calendar UI Styles - Reinforced Borders and Center Alignment */
         .calendar-grid { 
             display: grid; 
             grid-template-columns: repeat(7, 1fr); 
-            @apply border-l border-t border-slate-300 rounded-lg overflow-hidden;
+            /* 外枠をしっかり定義 */
+            @apply border border-slate-300 rounded-xl overflow-hidden shadow-sm;
         }
         .calendar-header { 
-            @apply bg-slate-100 p-2 text-center text-[11px] font-black text-slate-500 uppercase border-r border-b border-slate-300 flex items-center justify-center; 
+            /* 曜日を中央に配置 */
+            @apply bg-slate-100 p-3 text-center text-[11px] font-black text-slate-600 uppercase border-r border-b border-slate-300 flex items-center justify-center; 
         }
+        .calendar-header:last-child { @apply border-r-0; }
+
         .calendar-day { 
-            @apply bg-white p-1 text-xs transition border-r border-b border-slate-300 flex flex-col gap-0.5;
-            height: 100px; /* 縦の長さを固定 */
+            /* セルごとの枠線を明確化 */
+            @apply bg-white p-2 text-xs transition border-r border-b border-slate-300 flex flex-col gap-1;
+            height: 110px; /* 縦の長さを固定 (3-4行分) */
             overflow-y: auto;
         }
+        /* 列の最後と行の最後のボーダー調整 */
+        .calendar-day:nth-child(7n) { @apply border-r-0; }
+        
         .calendar-day:hover { @apply bg-slate-50; }
         .calendar-tag { 
-            /* テキストサイズを調整 (以前の70%より少し大きく) */
-            font-size: 9px;
-            line-height: 1.2;
-            @apply block w-full px-1.5 py-0.5 rounded font-bold bg-indigo-50 text-indigo-600 border border-indigo-100 truncate mb-0.5; 
+            /* フォントサイズを適切に調整 */
+            font-size: 10px;
+            line-height: 1.3;
+            @apply block w-full px-2 py-0.5 rounded font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 truncate mb-0.5; 
         }
         .calendar-today { @apply bg-indigo-50/50; }
-        .calendar-today .day-num { @apply bg-indigo-600 text-white rounded-full w-5 h-5 flex items-center justify-center; }
-        .day-num { @apply text-[10px] mb-1 px-1; }
+        .calendar-today .day-num { @apply bg-indigo-600 text-white rounded-full w-5 h-5 flex items-center justify-center font-bold; }
+        .day-num { @apply text-[11px] font-medium mb-1; }
 
-        /* Scrollbar styling for calendar cells */
-        .calendar-day::-webkit-scrollbar { width: 2px; }
-        .calendar-day::-webkit-scrollbar-thumb { @apply bg-slate-200 rounded; }
+        /* スクロールバーの非表示（見た目重視） */
+        .calendar-day::-webkit-scrollbar { width: 0px; }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-800">
@@ -142,7 +149,6 @@
                 </div>
             </div>
 
-            <!-- History Table -->
             <div class="lg:col-span-2 card !p-0 overflow-hidden">
                 <div class="p-4 border-b bg-slate-50 flex flex-wrap gap-3 justify-between items-center">
                     <div class="flex gap-2 items-center">
@@ -169,21 +175,21 @@
             </div>
         </div>
 
-        <!-- Vertical Layout for Calendar and Chart -->
-        <div class="flex flex-col gap-8 pb-12">
-            <!-- Utilization Calendar (Full Width Always) -->
-            <div class="card">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-xl font-bold flex items-center gap-2">📅 利用カレンダー</h2>
-                    <div id="calendar_label" class="text-sm font-bold text-indigo-600 bg-indigo-50 px-4 py-1.5 rounded-full"></div>
+        <!-- Vertical Stacking: Calendar then Chart -->
+        <div class="flex flex-col gap-10 pb-12">
+            <!-- Calendar Section -->
+            <div class="w-full">
+                <div class="flex justify-between items-center mb-6 px-2">
+                    <h2 class="text-xl font-black text-slate-700 flex items-center gap-2">📅 利用カレンダー</h2>
+                    <div id="calendar_label" class="text-sm font-bold text-indigo-700 bg-indigo-100 px-4 py-2 rounded-xl"></div>
                 </div>
                 <div id="calendar_container" class="calendar-grid"></div>
             </div>
 
-            <!-- Service Analysis Chart (Full Width Always) -->
-            <div class="card">
-                <h2 class="text-xl font-bold mb-6 flex items-center gap-2">📊 サービス別分析</h2>
-                <div class="h-[400px] w-full relative">
+            <!-- Analysis Section -->
+            <div class="w-full card">
+                <h2 class="text-xl font-black text-slate-700 mb-6 flex items-center gap-2">📊 サービス別分析</h2>
+                <div class="h-[400px] w-full">
                     <canvas id="analysisChart"></canvas>
                 </div>
             </div>
@@ -214,24 +220,6 @@
         let records = [];
         let unsubscribeSync = null;
         let analysisChart = null;
-        let timeLeft = 30 * 60 * 1000;
-
-        function resetLogoutTimer() {
-            if (!user) return;
-            timeLeft = 30 * 60 * 1000;
-        }
-
-        setInterval(() => {
-            if (!user) return;
-            timeLeft -= 1000;
-            if (timeLeft <= 0) {
-                signOut(auth).then(() => { alert("時間切れのためログアウトしました。"); location.reload(); });
-            }
-            const mins = Math.max(0, Math.floor(timeLeft / 60000));
-            const secs = Math.max(0, Math.floor((timeLeft % 60000) / 1000));
-            const timerEl = document.getElementById('auto_logout_timer');
-            if(timerEl) timerEl.innerText = `自動切断まで ${mins}:${secs.toString().padStart(2, '0')}`;
-        }, 1000);
 
         onAuthStateChanged(auth, (u) => {
             if (u) {
@@ -286,28 +274,8 @@
             mf.innerHTML = Array.from(months).sort().reverse().map(m => `<option value="${m}">${m.split('/')[0]}年 ${m.split('/')[1]}月</option>`).join('') || `<option value="${new Date().getFullYear()}/${new Date().getMonth()+1}">今月</option>`;
             sf.innerHTML = '<option value="all">全サービス表示</option>' + Array.from(services).sort().map(s => `<option value="${s}">${s}</option>`).join('');
 
-            mf.value = mVal || mf.firstChild.value;
+            mf.value = mVal || mf.firstChild?.value || "";
             sf.value = sVal || "all";
-        }
-
-        async function saveRecord(e) {
-            e.preventDefault();
-            const editId = document.getElementById('editing_id').value;
-            const docId = editId || `${Date.now()}`;
-            const data = {
-                date: editId ? records.find(r => r.id === editId).date : new Date().toLocaleDateString('ja-JP'),
-                service: document.getElementById('serviceName').value.trim(),
-                cash: parseInt(document.getElementById('cashAmount').value) || 0,
-                added: parseInt(document.getElementById('addedPoints').value) || 0,
-                spent: parseInt(document.getElementById('spentPoints').value) || 0,
-                won: parseInt(document.getElementById('winPoints').value) || 0,
-                prize: document.getElementById('highPrize').value.trim()
-            };
-            await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'records', docId), data);
-            document.getElementById('recordForm').reset();
-            document.getElementById('editing_id').value = "";
-            document.getElementById('submitBtn').innerText = "データを保存";
-            document.getElementById('cancelEdit').classList.add('hidden');
         }
 
         function renderUI() {
@@ -323,7 +291,7 @@
                 serviceSummary[r.service].invest += r.cash;
                 serviceSummary[r.service].gain += (r.added + (r.won || 0));
                 tCash += r.cash;
-                if(r.date.startsWith(m.replace('/','/'))) {
+                if(r.date.startsWith(m)) {
                     mCash += r.cash;
                     if(r.prize) mPrizes++;
                 }
@@ -332,12 +300,12 @@
             document.getElementById('stat_monthly_cash').innerText = `¥${mCash.toLocaleString()}`;
             document.getElementById('stat_monthly_prizes').innerText = mPrizes;
             document.getElementById('stat_total_cash').innerText = `¥${tCash.toLocaleString()}`;
-            document.getElementById('label_month').innerText = `${m.split('/')[1]}月の支払額`;
+            document.getElementById('label_month').innerText = `${m.split('/')[1] || ''}月の支払額`;
 
-            const filtered = records.filter(r => r.date.includes(m.replace('/','/')) && (s === 'all' || r.service === s));
+            const filtered = records.filter(r => r.date.startsWith(m) && (s === 'all' || r.service === s));
             document.getElementById('historyBody').innerHTML = filtered.map(r => `
                 <tr class="hover:bg-slate-50 border-b border-slate-100">
-                    <td class="p-4"><div class="text-[10px] text-slate-400">${r.date}</div><div class="font-bold">${r.service}</div></td>
+                    <td class="p-4"><div class="text-[10px] text-slate-400 font-mono">${r.date}</div><div class="font-bold text-slate-700">${r.service}</div></td>
                     <td class="p-4 text-center text-rose-500 font-bold">¥${r.cash.toLocaleString()}</td>
                     <td class="p-4 text-center text-orange-500">-${r.spent.toLocaleString()}</td>
                     <td class="p-4 text-center text-indigo-600 font-black">${r.runningBalance.toLocaleString()}</td>
@@ -345,10 +313,10 @@
                 </tr>
             `).join('');
 
-            document.getElementById('service_balances').innerHTML = Object.entries(currentBalances).map(([n, b]) => `
+            document.getElementById('service_balances').innerHTML = Object.entries(currentBalances).map(([name, bal]) => `
                 <div class="flex justify-between bg-slate-50 p-3 rounded-xl border border-slate-100 mb-2">
-                    <span class="font-bold text-slate-600">${n}</span>
-                    <span class="text-indigo-600 font-black">${b.toLocaleString()} pt</span>
+                    <span class="font-bold text-slate-600">${name}</span>
+                    <span class="text-indigo-600 font-black">${bal.toLocaleString()} pt</span>
                 </div>
             `).join('');
 
@@ -363,7 +331,10 @@
             const last = new Date(y, m, 0).getDate();
             
             let html = ['日','月','火','水','木','金','土'].map(d => `<div class="calendar-header">${d}</div>`).join('');
-            for(let i=0; i<first; i++) html += `<div class="bg-slate-50/50 border-r border-b border-slate-300"></div>`;
+            
+            for(let i=0; i<first; i++) {
+                html += `<div class="bg-slate-50/50 border-r border-b border-slate-300"></div>`;
+            }
             
             for(let d=1; d<=last; d++) {
                 const dayRecs = records.filter(r => {
@@ -375,7 +346,7 @@
 
                 html += `
                     <div class="calendar-day ${isToday ? 'calendar-today' : ''}">
-                        <div class="day-num font-bold ${isToday ? '' : 'text-slate-400'}">${d}</div>
+                        <div class="day-num ${isToday ? '' : 'text-slate-400'}">${d}</div>
                         <div class="flex flex-col">
                             ${services.map(s => `<span class="calendar-tag">${s}</span>`).join('')}
                         </div>
@@ -394,9 +365,9 @@
                 data: {
                     labels: labels,
                     datasets: [
-                        { label: '総投資(円)', data: labels.map(l => summary[l].invest), backgroundColor: '#fb7185' },
-                        { label: '累計獲得(pts)', data: labels.map(l => summary[l].gain), backgroundColor: '#34d399' },
-                        { label: '現在の残高', data: labels.map(l => summary[l].bal), backgroundColor: '#818cf8' }
+                        { label: '投資(円)', data: labels.map(l => summary[l].invest), backgroundColor: '#fb7185' },
+                        { label: '獲得(pts)', data: labels.map(l => summary[l].gain), backgroundColor: '#34d399' },
+                        { label: '残高', data: labels.map(l => summary[l].bal), backgroundColor: '#818cf8' }
                     ]
                 },
                 options: { responsive: true, maintainAspectRatio: false }
@@ -414,9 +385,29 @@
             document.getElementById('highPrize').value = r.prize;
             document.getElementById('submitBtn').innerText = "修正を保存";
             document.getElementById('cancelEdit').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         };
 
-        document.getElementById('recordForm').addEventListener('submit', saveRecord);
+        document.getElementById('recordForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const editId = document.getElementById('editing_id').value;
+            const docId = editId || `${Date.now()}`;
+            const data = {
+                date: editId ? records.find(r => r.id === editId).date : new Date().toLocaleDateString('ja-JP'),
+                service: document.getElementById('serviceName').value.trim(),
+                cash: parseInt(document.getElementById('cashAmount').value) || 0,
+                added: parseInt(document.getElementById('addedPoints').value) || 0,
+                spent: parseInt(document.getElementById('spentPoints').value) || 0,
+                won: parseInt(document.getElementById('winPoints').value) || 0,
+                prize: document.getElementById('highPrize').value.trim()
+            };
+            await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'records', docId), data);
+            document.getElementById('recordForm').reset();
+            document.getElementById('editing_id').value = "";
+            document.getElementById('submitBtn').innerText = "データを保存";
+            document.getElementById('cancelEdit').classList.add('hidden');
+        });
+
         document.getElementById('monthFilter').addEventListener('change', renderUI);
         document.getElementById('serviceFilter').addEventListener('change', renderUI);
     </script>
