@@ -17,27 +17,34 @@
         .card { @apply bg-white p-6 rounded-2xl shadow-md border border-slate-200; }
         .input-field { @apply w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-indigo-500 transition; }
         
-        /* Calendar UI Styles */
+        /* Calendar UI Styles - Fixed & Boxed */
         .calendar-grid { 
             display: grid; 
             grid-template-columns: repeat(7, 1fr); 
-            @apply bg-slate-200 border-l border-t border-slate-200 rounded-xl overflow-hidden shadow-inner; 
+            @apply border-l border-t border-slate-300 rounded-lg overflow-hidden;
         }
         .calendar-header { 
-            @apply bg-slate-100 p-2 text-center text-[10px] font-black text-slate-500 uppercase border-r border-b border-slate-200; 
+            @apply bg-slate-100 p-2 text-center text-[11px] font-black text-slate-500 uppercase border-r border-b border-slate-300 flex items-center justify-center; 
         }
         .calendar-day { 
-            @apply bg-white p-1.5 min-h-[90px] text-xs transition border-r border-b border-slate-200 flex flex-col gap-1; 
+            @apply bg-white p-1 text-xs transition border-r border-b border-slate-300 flex flex-col gap-0.5;
+            height: 100px; /* 縦の長さを固定 */
+            overflow-y: auto;
         }
         .calendar-day:hover { @apply bg-slate-50; }
         .calendar-tag { 
-            /* フォントサイズを現在の70%程度（約7px相当）に設定 */
-            font-size: 7px;
+            /* テキストサイズを調整 (以前の70%より少し大きく) */
+            font-size: 9px;
             line-height: 1.2;
-            @apply block w-full px-1.5 py-0.5 rounded font-bold bg-indigo-50 text-indigo-600 border border-indigo-100 truncate; 
+            @apply block w-full px-1.5 py-0.5 rounded font-bold bg-indigo-50 text-indigo-600 border border-indigo-100 truncate mb-0.5; 
         }
         .calendar-today { @apply bg-indigo-50/50; }
         .calendar-today .day-num { @apply bg-indigo-600 text-white rounded-full w-5 h-5 flex items-center justify-center; }
+        .day-num { @apply text-[10px] mb-1 px-1; }
+
+        /* Scrollbar styling for calendar cells */
+        .calendar-day::-webkit-scrollbar { width: 2px; }
+        .calendar-day::-webkit-scrollbar-thumb { @apply bg-slate-200 rounded; }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-800">
@@ -47,7 +54,6 @@
         <div id="loader_icon" class="animate-spin h-12 w-12 border-4 border-indigo-600 border-t-transparent rounded-full"></div>
         <div id="login_ui" class="hidden flex flex-col items-center gap-4">
             <h1 class="text-2xl font-black text-indigo-700">💎 オリパ管理 Pro</h1>
-            <p class="text-slate-500 text-sm mb-4">ログインしてデータを管理</p>
             <button id="googleLoginBtn" class="flex items-center gap-3 bg-white border border-slate-300 px-6 py-3 rounded-full font-bold shadow-sm hover:shadow-md transition active:scale-95">
                 <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20">
                 Googleでログイン
@@ -68,7 +74,7 @@
         </div>
     </nav>
 
-    <main id="app_content" class="max-w-6xl mx-auto p-4 md:p-6 space-y-6 opacity-0 transition-opacity duration-500">
+    <main id="app_content" class="max-w-6xl mx-auto p-4 md:p-6 space-y-8 opacity-0 transition-opacity duration-500">
         
         <!-- Summary Dashboard -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -92,7 +98,7 @@
             </div>
         </div>
 
-        <!-- Forms and History -->
+        <!-- Form and History -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div class="lg:col-span-1">
                 <div class="card">
@@ -163,24 +169,23 @@
             </div>
         </div>
 
-        <!-- Analysis & Calendar Section -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-12">
-            <!-- Utilization Calendar -->
+        <!-- Vertical Layout for Calendar and Chart -->
+        <div class="flex flex-col gap-8 pb-12">
+            <!-- Utilization Calendar (Full Width Always) -->
             <div class="card">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-lg font-bold flex items-center gap-2">📅 利用カレンダー</h2>
-                    <div id="calendar_label" class="text-sm font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full"></div>
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold flex items-center gap-2">📅 利用カレンダー</h2>
+                    <div id="calendar_label" class="text-sm font-bold text-indigo-600 bg-indigo-50 px-4 py-1.5 rounded-full"></div>
                 </div>
                 <div id="calendar_container" class="calendar-grid"></div>
             </div>
 
-            <!-- Service Analysis Chart -->
-            <div class="card flex flex-col">
-                <h2 class="text-lg font-bold mb-4 flex items-center gap-2">📊 サービス別分析</h2>
-                <div class="flex-grow min-h-[300px] relative">
+            <!-- Service Analysis Chart (Full Width Always) -->
+            <div class="card">
+                <h2 class="text-xl font-bold mb-6 flex items-center gap-2">📊 サービス別分析</h2>
+                <div class="h-[400px] w-full relative">
                     <canvas id="analysisChart"></canvas>
                 </div>
-                <div class="mt-4 text-[10px] text-slate-400 italic">※累計の投資・獲得・現在のバランスを比較しています</div>
             </div>
         </div>
     </main>
@@ -190,9 +195,6 @@
         import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // ==========================================
-        // Firebase Config
-        // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyDyblCmPzgaK0hhmGMnvvmm1O7LksLaySk",
             authDomain: "my-managertool-project.firebaseapp.com",
@@ -212,85 +214,84 @@
         let records = [];
         let unsubscribeSync = null;
         let analysisChart = null;
-
-        // Auto Logout Logic
-        let logoutTimer;
-        const TIMEOUT_MS = 30 * 60 * 1000;
-        let timeLeft = TIMEOUT_MS;
+        let timeLeft = 30 * 60 * 1000;
 
         function resetLogoutTimer() {
             if (!user) return;
-            clearTimeout(logoutTimer);
-            timeLeft = TIMEOUT_MS;
-            logoutTimer = setTimeout(() => {
-                signOut(auth).then(() => {
-                    alert("30分間操作がなかったためログアウトしました。");
-                    location.reload();
-                });
-            }, TIMEOUT_MS);
+            timeLeft = 30 * 60 * 1000;
         }
 
         setInterval(() => {
             if (!user) return;
             timeLeft -= 1000;
+            if (timeLeft <= 0) {
+                signOut(auth).then(() => { alert("時間切れのためログアウトしました。"); location.reload(); });
+            }
             const mins = Math.max(0, Math.floor(timeLeft / 60000));
             const secs = Math.max(0, Math.floor((timeLeft % 60000) / 1000));
             const timerEl = document.getElementById('auto_logout_timer');
             if(timerEl) timerEl.innerText = `自動切断まで ${mins}:${secs.toString().padStart(2, '0')}`;
         }, 1000);
 
-        ['mousedown', 'keydown', 'touchstart'].forEach(e => window.addEventListener(e, resetLogoutTimer));
-
         onAuthStateChanged(auth, (u) => {
             if (u) {
                 user = u;
-                resetLogoutTimer();
-                const photo = document.getElementById('user_photo');
-                if(photo) {
-                    photo.src = u.photoURL;
-                    photo.classList.remove('hidden');
-                }
+                document.getElementById('user_photo').src = u.photoURL;
+                document.getElementById('user_photo').classList.remove('hidden');
                 startSync();
             } else {
                 if (unsubscribeSync) unsubscribeSync();
-                user = null;
                 document.getElementById('loader_icon').classList.add('hidden');
                 document.getElementById('login_ui').classList.remove('hidden');
-                document.getElementById('auth_overlay').style.display = 'flex';
-                document.getElementById('auth_overlay').style.opacity = '1';
-                document.getElementById('app_content').classList.add('opacity-0');
             }
         });
 
         document.getElementById('googleLoginBtn').addEventListener('click', () => signInWithPopup(auth, provider));
-        document.getElementById('logoutBtn').addEventListener('click', () => { if(confirm("ログアウトしますか？")) signOut(auth).then(() => location.reload()); });
+        document.getElementById('logoutBtn').addEventListener('click', () => signOut(auth));
 
         function startSync() {
-            if (!user) return;
             const colRef = collection(db, 'artifacts', appId, 'users', user.uid, 'records');
             unsubscribeSync = onSnapshot(colRef, (snapshot) => {
-                const rawRecords = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+                const raw = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
                     .sort((a, b) => parseInt(a.id) - parseInt(b.id));
                 
-                const serviceBalMap = {};
-                records = rawRecords.map(r => {
-                    serviceBalMap[r.service] = (serviceBalMap[r.service] || 0) + (r.added + (r.won || 0) - (r.spent || 0));
-                    return { ...r, runningBalance: serviceBalMap[r.service] };
+                const balances = {};
+                records = raw.map(r => {
+                    balances[r.service] = (balances[r.service] || 0) + (r.added + (r.won || 0) - (r.spent || 0));
+                    return { ...r, runningBalance: balances[r.service] };
                 }).reverse();
 
-                setupMonthFilter();
-                setupServiceFilter();
+                setupFilters();
                 renderUI();
-                
-                document.getElementById('auth_overlay').style.opacity = '0';
-                setTimeout(() => { if (user) document.getElementById('auth_overlay').style.display = 'none'; }, 500);
+                document.getElementById('auth_overlay').classList.add('opacity-0');
+                setTimeout(() => document.getElementById('auth_overlay').style.display = 'none', 500);
                 document.getElementById('app_content').classList.remove('opacity-0');
             });
         }
 
+        function setupFilters() {
+            const months = new Set();
+            const services = new Set();
+            records.forEach(r => {
+                const p = r.date.split('/');
+                months.add(`${p[0]}/${parseInt(p[1])}`);
+                services.add(r.service);
+            });
+            
+            const mf = document.getElementById('monthFilter');
+            const sf = document.getElementById('serviceFilter');
+            const mVal = mf.value;
+            const sVal = sf.value;
+
+            mf.innerHTML = Array.from(months).sort().reverse().map(m => `<option value="${m}">${m.split('/')[0]}年 ${m.split('/')[1]}月</option>`).join('') || `<option value="${new Date().getFullYear()}/${new Date().getMonth()+1}">今月</option>`;
+            sf.innerHTML = '<option value="all">全サービス表示</option>' + Array.from(services).sort().map(s => `<option value="${s}">${s}</option>`).join('');
+
+            mf.value = mVal || mf.firstChild.value;
+            sf.value = sVal || "all";
+        }
+
         async function saveRecord(e) {
             e.preventDefault();
-            if (!user) return;
             const editId = document.getElementById('editing_id').value;
             const docId = editId || `${Date.now()}`;
             const data = {
@@ -303,8 +304,103 @@
                 prize: document.getElementById('highPrize').value.trim()
             };
             await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'records', docId), data);
-            resetForm();
-            resetLogoutTimer();
+            document.getElementById('recordForm').reset();
+            document.getElementById('editing_id').value = "";
+            document.getElementById('submitBtn').innerText = "データを保存";
+            document.getElementById('cancelEdit').classList.add('hidden');
+        }
+
+        function renderUI() {
+            const m = document.getElementById('monthFilter').value;
+            const s = document.getElementById('serviceFilter').value;
+            const currentBalances = {};
+            const serviceSummary = {};
+            let tCash = 0, mCash = 0, mPrizes = 0;
+
+            records.forEach(r => {
+                if (!currentBalances[r.service]) currentBalances[r.service] = r.runningBalance;
+                if (!serviceSummary[r.service]) serviceSummary[r.service] = { invest: 0, gain: 0, bal: r.runningBalance };
+                serviceSummary[r.service].invest += r.cash;
+                serviceSummary[r.service].gain += (r.added + (r.won || 0));
+                tCash += r.cash;
+                if(r.date.startsWith(m.replace('/','/'))) {
+                    mCash += r.cash;
+                    if(r.prize) mPrizes++;
+                }
+            });
+
+            document.getElementById('stat_monthly_cash').innerText = `¥${mCash.toLocaleString()}`;
+            document.getElementById('stat_monthly_prizes').innerText = mPrizes;
+            document.getElementById('stat_total_cash').innerText = `¥${tCash.toLocaleString()}`;
+            document.getElementById('label_month').innerText = `${m.split('/')[1]}月の支払額`;
+
+            const filtered = records.filter(r => r.date.includes(m.replace('/','/')) && (s === 'all' || r.service === s));
+            document.getElementById('historyBody').innerHTML = filtered.map(r => `
+                <tr class="hover:bg-slate-50 border-b border-slate-100">
+                    <td class="p-4"><div class="text-[10px] text-slate-400">${r.date}</div><div class="font-bold">${r.service}</div></td>
+                    <td class="p-4 text-center text-rose-500 font-bold">¥${r.cash.toLocaleString()}</td>
+                    <td class="p-4 text-center text-orange-500">-${r.spent.toLocaleString()}</td>
+                    <td class="p-4 text-center text-indigo-600 font-black">${r.runningBalance.toLocaleString()}</td>
+                    <td class="p-4 text-right"><button onclick="window.editRecord('${r.id}')" class="text-indigo-600 text-xs font-bold">修正</button></td>
+                </tr>
+            `).join('');
+
+            document.getElementById('service_balances').innerHTML = Object.entries(currentBalances).map(([n, b]) => `
+                <div class="flex justify-between bg-slate-50 p-3 rounded-xl border border-slate-100 mb-2">
+                    <span class="font-bold text-slate-600">${n}</span>
+                    <span class="text-indigo-600 font-black">${b.toLocaleString()} pt</span>
+                </div>
+            `).join('');
+
+            renderCalendar(m);
+            renderChart(serviceSummary);
+        }
+
+        function renderCalendar(mStr) {
+            const [y, m] = mStr.split('/').map(Number);
+            document.getElementById('calendar_label').innerText = `${y}年 ${m}月`;
+            const first = new Date(y, m - 1, 1).getDay();
+            const last = new Date(y, m, 0).getDate();
+            
+            let html = ['日','月','火','水','木','金','土'].map(d => `<div class="calendar-header">${d}</div>`).join('');
+            for(let i=0; i<first; i++) html += `<div class="bg-slate-50/50 border-r border-b border-slate-300"></div>`;
+            
+            for(let d=1; d<=last; d++) {
+                const dayRecs = records.filter(r => {
+                    const p = r.date.split('/');
+                    return Number(p[0]) === y && Number(p[1]) === m && Number(p[2]) === d;
+                });
+                const isToday = new Date().toLocaleDateString('ja-JP') === new Date(y, m-1, d).toLocaleDateString('ja-JP');
+                const services = [...new Set(dayRecs.map(r => r.service))];
+
+                html += `
+                    <div class="calendar-day ${isToday ? 'calendar-today' : ''}">
+                        <div class="day-num font-bold ${isToday ? '' : 'text-slate-400'}">${d}</div>
+                        <div class="flex flex-col">
+                            ${services.map(s => `<span class="calendar-tag">${s}</span>`).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+            document.getElementById('calendar_container').innerHTML = html;
+        }
+
+        function renderChart(summary) {
+            const ctx = document.getElementById('analysisChart').getContext('2d');
+            const labels = Object.keys(summary);
+            if (analysisChart) analysisChart.destroy();
+            analysisChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: '総投資(円)', data: labels.map(l => summary[l].invest), backgroundColor: '#fb7185' },
+                        { label: '累計獲得(pts)', data: labels.map(l => summary[l].gain), backgroundColor: '#34d399' },
+                        { label: '現在の残高', data: labels.map(l => summary[l].bal), backgroundColor: '#818cf8' }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
         }
 
         window.editRecord = (id) => {
@@ -318,168 +414,9 @@
             document.getElementById('highPrize').value = r.prize;
             document.getElementById('submitBtn').innerText = "修正を保存";
             document.getElementById('cancelEdit').classList.remove('hidden');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
         };
-
-        window.deleteRecord = async (id) => {
-            if(!user) return;
-            if(confirm("削除しますか？")) await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'records', String(id)));
-        };
-
-        function resetForm() {
-            document.getElementById('recordForm').reset();
-            document.getElementById('editing_id').value = "";
-            document.getElementById('submitBtn').innerText = "データを保存";
-            document.getElementById('cancelEdit').classList.add('hidden');
-        }
-
-        function setupMonthFilter() {
-            const months = new Set([`${new Date().getFullYear()}/${new Date().getMonth()+1}`]);
-            records.forEach(r => { const p = r.date.split('/'); months.add(`${p[0]}/${parseInt(p[1])}`); });
-            const f = document.getElementById('monthFilter');
-            const cur = f.value;
-            f.innerHTML = Array.from(months).sort().reverse().map(m => `<option value="${m}">${m.split('/')[0]}年 ${m.split('/')[1]}月</option>`).join('');
-            f.value = cur || Array.from(months)[0];
-        }
-
-        function setupServiceFilter() {
-            const services = new Set();
-            records.forEach(r => services.add(r.service));
-            const f = document.getElementById('serviceFilter');
-            const cur = f.value;
-            f.innerHTML = '<option value="all">全サービス表示</option>' + 
-                          Array.from(services).sort().map(s => `<option value="${s}">${s}</option>`).join('');
-            f.value = cur || "all";
-        }
-
-        function renderUI() {
-            const selectedMonth = document.getElementById('monthFilter').value;
-            const selectedService = document.getElementById('serviceFilter').value;
-            const currentBalances = {};
-            const serviceSummary = {};
-            let totalCash = 0, monthCash = 0, monthPrizes = 0;
-
-            records.forEach(r => {
-                if (!currentBalances[r.service]) currentBalances[r.service] = r.runningBalance;
-                if (!serviceSummary[r.service]) serviceSummary[r.service] = { invest: 0, gain: 0, bal: r.runningBalance };
-                serviceSummary[r.service].invest += r.cash;
-                serviceSummary[r.service].gain += (r.added + (r.won || 0));
-                totalCash += r.cash;
-                const p = r.date.split('/');
-                if(`${p[0]}/${parseInt(p[1])}` === selectedMonth) {
-                    monthCash += r.cash;
-                    if(r.prize) monthPrizes++;
-                }
-            });
-
-            document.getElementById('stat_monthly_cash').innerText = `¥${monthCash.toLocaleString()}`;
-            document.getElementById('stat_monthly_prizes').innerText = monthPrizes;
-            document.getElementById('stat_total_cash').innerText = `¥${totalCash.toLocaleString()}`;
-            document.getElementById('label_month').innerText = `${selectedMonth.split('/')[1]}月の支払額`;
-
-            const filtered = records.filter(r => {
-                const p = r.date.split('/');
-                return `${p[0]}/${parseInt(p[1])}` === selectedMonth && (selectedService === 'all' || r.service === selectedService);
-            });
-
-            document.getElementById('historyBody').innerHTML = filtered.length ? filtered.map(r => `
-                <tr class="hover:bg-slate-50 transition border-b border-slate-100">
-                    <td class="p-4">
-                        <div class="text-[10px] text-slate-400 font-mono mb-1">${r.date}</div>
-                        <div class="font-bold text-slate-700">${r.service}</div>
-                        ${r.prize ? `<div class="text-[10px] text-amber-600 font-bold mt-1">🏆 ${r.prize}</div>` : ''}
-                    </td>
-                    <td class="p-4 text-center">
-                        <span class="text-rose-500 font-bold">¥${r.cash.toLocaleString()}</span>
-                    </td>
-                    <td class="p-4 text-center text-orange-500 font-medium">${r.spent > 0 ? `-${r.spent.toLocaleString()}` : '-'}</td>
-                    <td class="p-4 text-center">
-                        <div class="font-black text-indigo-600">${r.runningBalance.toLocaleString()} <span class="text-[10px]">pts</span></div>
-                    </td>
-                    <td class="p-4 text-right space-x-2">
-                        <button onclick="editRecord('${r.id}')" class="text-indigo-600 text-xs font-bold">修正</button>
-                        <button onclick="deleteRecord('${r.id}')" class="text-slate-300 hover:text-red-500">×</button>
-                    </td>
-                </tr>
-            `).join('') : `<tr><td colspan="5" class="p-10 text-center text-slate-400">履歴がありません</td></tr>`;
-
-            document.getElementById('service_balances').innerHTML = Object.entries(currentBalances).length ? Object.entries(currentBalances).sort((a,b)=>b[1]-a[1]).map(([n, b]) => `
-                <div class="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100 mb-2">
-                    <span class="font-bold text-slate-600">${n}</span>
-                    <span class="font-mono text-indigo-600 font-black">${b.toLocaleString()} <span class="text-[8px]">pts</span></span>
-                </div>
-            `).join('') : `<p class="text-slate-400 text-xs italic text-center p-4">履歴から自動集計されます</p>`;
-
-            document.getElementById('service_suggestions').innerHTML = Object.keys(currentBalances).map(n => `<option value="${n}">`).join('');
-
-            renderCalendar(selectedMonth);
-            renderChart(serviceSummary);
-        }
-
-        function renderCalendar(mStr) {
-            const [y, m] = mStr.split('/').map(Number);
-            document.getElementById('calendar_label').innerText = `${y}年 ${m}月`;
-            
-            const firstDay = new Date(y, m - 1, 1).getDay();
-            const lastDate = new Date(y, m, 0).getDate();
-            
-            let html = ['日','月','火','水','木','金','土'].map(d => `<div class="calendar-header">${d}</div>`).join('');
-            
-            // Padding
-            for(let i=0; i<firstDay; i++) html += `<div class="bg-slate-50/50 border-r border-b border-slate-200"></div>`;
-            
-            // Days
-            for(let d=1; d<=lastDate; d++) {
-                const dayRecords = records.filter(r => {
-                    const p = r.date.split('/');
-                    return parseInt(p[0]) === y && parseInt(p[1]) === m && parseInt(p[2]) === d;
-                });
-
-                const isToday = new Date().toLocaleDateString('ja-JP') === new Date(y, m-1, d).toLocaleDateString('ja-JP');
-                const uniqueServices = [...new Set(dayRecords.map(r => r.service))];
-
-                html += `
-                    <div class="calendar-day ${isToday ? 'calendar-today' : ''}">
-                        <div class="day-num font-bold ${isToday ? '' : 'text-slate-400'}">${d}</div>
-                        <div class="flex flex-col gap-1 overflow-hidden">
-                            ${uniqueServices.map(s => `<span class="calendar-tag">${s}</span>`).join('')}
-                        </div>
-                    </div>
-                `;
-            }
-            document.getElementById('calendar_container').innerHTML = html;
-        }
-
-        function renderChart(summary) {
-            const ctx = document.getElementById('analysisChart').getContext('2d');
-            const labels = Object.keys(summary);
-            if (analysisChart) analysisChart.destroy();
-            if (labels.length === 0) return;
-
-            analysisChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        { label: '総投資(円)', data: labels.map(l => summary[l].invest), backgroundColor: '#fb7185', borderRadius: 4 },
-                        { label: '累計獲得(pts)', data: labels.map(l => summary[l].gain), backgroundColor: '#34d399', borderRadius: 4 },
-                        { label: '現在の残高', data: labels.map(l => summary[l].bal), backgroundColor: '#818cf8', borderRadius: 4 }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom', labels: { font: { size: 10, weight: 'bold' }, usePointStyle: true } } },
-                    scales: {
-                        y: { beginAtZero: true, ticks: { font: { size: 9 } } },
-                        x: { ticks: { font: { size: 10, weight: 'bold' } } }
-                    }
-                }
-            });
-        }
 
         document.getElementById('recordForm').addEventListener('submit', saveRecord);
-        document.getElementById('cancelEdit').addEventListener('click', resetForm);
         document.getElementById('monthFilter').addEventListener('change', renderUI);
         document.getElementById('serviceFilter').addEventListener('change', renderUI);
     </script>
