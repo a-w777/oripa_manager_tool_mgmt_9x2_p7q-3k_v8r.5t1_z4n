@@ -17,78 +17,38 @@
         .card { @apply bg-white p-6 rounded-2xl shadow-md border border-slate-200; }
         .input-field { @apply w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-indigo-500 transition; }
         
-        /* --- カレンダー枠線の修正 --- */
+        /* --- カレンダーの枠線と配置の修正 --- */
         .calendar-grid { 
             display: grid; 
             grid-template-columns: repeat(7, 1fr); 
-            width: 100%;
-            border-top: 2px solid #cbd5e1; /* 上枠 */
-            border-left: 2px solid #cbd5e1; /* 左枠 */
-            border-radius: 8px;
-            overflow: hidden;
+            @apply border-l border-t border-slate-300 rounded-lg overflow-hidden;
         }
-        
         .calendar-header { 
-            /* 曜日ヘッダーを中央寄せ */
+            /* 曜日を中央に配置 */
             display: flex;
             align-items: center;
             justify-content: center;
-            background-color: #f8fafc;
-            font-size: 11px;
-            font-weight: 900;
-            color: #64748b;
-            padding: 12px 0;
-            border-right: 2px solid #cbd5e1; /* セルごとの縦線 */
-            border-bottom: 2px solid #cbd5e1; /* セルごとの横線 */
+            @apply bg-slate-100 p-2 text-center text-[11px] font-black text-slate-500 border-r border-b border-slate-300; 
         }
-
         .calendar-day { 
-            background-color: #ffffff;
-            padding: 4px;
-            height: 100px; /* 高さを固定 */
-            border-right: 2px solid #cbd5e1; /* セルごとの縦線 */
-            border-bottom: 2px solid #cbd5e1; /* セルごとの横線 */
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-            overflow-y: auto;
+            /* 枠線と高さを固定 */
+            height: 100px;
+            @apply bg-white p-1 text-xs transition border-r border-b border-slate-300 flex flex-col gap-0.5 overflow-y-auto;
         }
-        
-        .calendar-day:hover { background-color: #f1f5f9; }
-
-        /* サービス名タグのサイズ調整（読みやすさ重視） */
+        .calendar-day:hover { @apply bg-slate-50; }
         .calendar-tag { 
+            /* フォントサイズを小さすぎない程度に調整 */
             font-size: 9.5px;
             line-height: 1.2;
-            padding: 2px 4px;
-            border-radius: 4px;
-            font-weight: 700;
-            background-color: #eef2ff;
-            color: #4338ca;
-            border: 1px solid #c7d2fe;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            display: block;
+            @apply block w-full px-1.5 py-0.5 rounded font-bold bg-indigo-50 text-indigo-600 border border-indigo-100 truncate mb-0.5; 
         }
+        .calendar-today { @apply bg-indigo-50/50; }
+        .calendar-today .day-num { @apply bg-indigo-600 text-white rounded-full w-5 h-5 flex items-center justify-center; }
+        .day-num { @apply text-[10px] mb-1 px-1 font-bold text-slate-400; }
 
-        .calendar-today { background-color: #f5f3ff; }
-        .calendar-today .day-num { 
-            background-color: #4f46e5; 
-            color: white; 
-            border-radius: 9999px;
-            width: 20px;
-            height: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .day-num { font-size: 11px; font-weight: 700; color: #94a3b8; margin-bottom: 2px; }
-
-        /* カレンダー内のスクロールバーを細く */
-        .calendar-day::-webkit-scrollbar { width: 3px; }
-        .calendar-day::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        /* スクロールバー設定 */
+        .calendar-day::-webkit-scrollbar { width: 2px; }
+        .calendar-day::-webkit-scrollbar-thumb { @apply bg-slate-200 rounded; }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-800">
@@ -116,113 +76,119 @@
         </div>
     </nav>
 
-    <main id="app_content" class="max-w-4xl mx-auto p-4 md:p-6 space-y-10 opacity-0 transition-opacity duration-500">
+    <main id="app_content" class="max-w-6xl mx-auto p-4 md:p-6 space-y-8 opacity-0 transition-opacity duration-500">
         
-        <!-- Dashboard & Form (省略なし) -->
+        <!-- Summary Dashboard -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div class="lg:col-span-1 card">
-                <h2 class="text-xs font-bold text-slate-400 uppercase mb-4 tracking-widest">💳 現在の残高</h2>
-                <div id="service_balances" class="space-y-2 max-h-[250px] overflow-y-auto text-sm"></div>
+                <h2 class="text-xs font-bold text-slate-400 uppercase mb-4 tracking-widest">💳 現在の最新残高</h2>
+                <div id="service_balances" class="space-y-2 max-h-[300px] overflow-y-auto text-sm"></div>
             </div>
-            <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-emerald-500 text-center">
+            <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-emerald-500">
                     <p class="text-xs text-slate-500 font-bold mb-1" id="label_month">今月の支払額</p>
                     <h3 class="text-2xl font-black text-slate-700" id="stat_monthly_cash">¥0</h3>
                 </div>
-                <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-amber-500 text-center">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-amber-500">
                     <p class="text-xs text-slate-500 font-bold mb-1">今月の高額当選</p>
                     <h3 class="text-2xl font-black text-slate-700" id="stat_monthly_prizes">0</h3>
                 </div>
-                <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-indigo-500 text-center">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-indigo-500">
                     <p class="text-xs text-slate-500 font-bold mb-1">生涯総投資額</p>
                     <h3 class="text-2xl font-black text-slate-700" id="stat_total_cash">¥0</h3>
                 </div>
             </div>
         </div>
 
-        <!-- 記録フォーム -->
-        <div class="card">
-            <h2 class="text-lg font-bold mb-4 flex justify-between">
-                <span id="form_title">📥 データを記録する</span>
-                <button id="cancelEdit" class="hidden text-xs text-red-500">修正をキャンセル</button>
-            </h2>
-            <form id="recordForm" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <input type="hidden" id="editing_id">
-                <div class="md:col-span-1">
-                    <label class="block text-[10px] font-bold text-slate-400 mb-1">サービス名</label>
-                    <input type="text" id="serviceName" list="service_suggestions" class="input-field text-sm" placeholder="DOPAなど" required>
-                    <datalist id="service_suggestions"></datalist>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-1">
+                <div class="card">
+                    <h2 class="text-lg font-bold mb-4 flex justify-between">
+                        <span id="form_title">📥 今日の記録</span>
+                        <button id="cancelEdit" class="hidden text-xs text-red-500">キャンセル</button>
+                    </h2>
+                    <form id="recordForm" class="space-y-4">
+                        <input type="hidden" id="editing_id">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-1">サービス名</label>
+                            <input type="text" id="serviceName" list="service_suggestions" class="input-field" placeholder="DOPAなど" required>
+                            <datalist id="service_suggestions"></datalist>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3 bg-indigo-50 p-3 rounded-lg">
+                            <div>
+                                <label class="block text-[10px] font-bold text-indigo-400 mb-1">支払額(円)</label>
+                                <input type="number" id="cashAmount" placeholder="0" class="p-2 border rounded-lg w-full outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-indigo-400 mb-1">チャージpts</label>
+                                <input type="number" id="addedPoints" placeholder="0" class="p-2 border rounded-lg w-full outline-none">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3 bg-orange-50 p-3 rounded-lg">
+                            <div>
+                                <label class="block text-[10px] font-bold text-orange-400 mb-1">消費pts</label>
+                                <input type="number" id="spentPoints" placeholder="0" class="p-2 border rounded-lg w-full outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-orange-400 mb-1">当選pts</label>
+                                <input type="number" id="winPoints" placeholder="0" class="p-2 border rounded-lg w-full outline-none">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-1">高額当選アイテム（任意）</label>
+                            <input type="text" id="highPrize" placeholder="アイテム名" class="input-field">
+                        </div>
+                        <button type="submit" id="submitBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-xl shadow-lg transition active:scale-95">データを保存</button>
+                    </form>
                 </div>
-                <div class="md:col-span-1">
-                    <label class="block text-[10px] font-bold text-slate-400 mb-1">支払額(円)</label>
-                    <input type="number" id="cashAmount" placeholder="0" class="input-field text-sm">
+            </div>
+
+            <!-- History Table -->
+            <div class="lg:col-span-2 card !p-0 overflow-hidden">
+                <div class="p-4 border-b bg-slate-50 flex flex-wrap gap-3 justify-between items-center">
+                    <div class="flex gap-2 items-center">
+                        <select id="monthFilter" class="p-1.5 border rounded-lg text-sm bg-white outline-none font-bold shadow-sm"></select>
+                        <select id="serviceFilter" class="p-1.5 border rounded-lg text-sm bg-white outline-none font-bold shadow-sm">
+                            <option value="all">全サービス表示</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="md:col-span-1">
-                    <label class="block text-[10px] font-bold text-slate-400 mb-1">チャージpts</label>
-                    <input type="number" id="addedPoints" placeholder="0" class="input-field text-sm">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead class="bg-slate-50 text-[10px] text-slate-400 font-black border-b uppercase tracking-wider">
+                            <tr>
+                                <th class="p-4">日付 / サービス</th>
+                                <th class="p-4 text-center">支払額</th>
+                                <th class="p-4 text-center">消費pt</th>
+                                <th class="p-4 text-center">残高ポイント</th>
+                                <th class="p-4 text-right">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyBody" class="divide-y text-sm"></tbody>
+                    </table>
                 </div>
-                <div class="md:col-span-1">
-                    <button type="submit" id="submitBtn" class="h-full w-full bg-indigo-600 text-white font-bold rounded-xl shadow-lg mt-5 md:mt-0 transition hover:bg-indigo-700 active:scale-95">保存</button>
-                </div>
-                <!-- 詳細入力用（隠し要素的な配置） -->
-                <div class="md:col-span-1">
-                    <label class="block text-[10px] font-bold text-slate-400 mb-1">消費pts</label>
-                    <input type="number" id="spentPoints" placeholder="0" class="input-field text-sm">
-                </div>
-                <div class="md:col-span-1">
-                    <label class="block text-[10px] font-bold text-slate-400 mb-1">当選pts</label>
-                    <input type="number" id="winPoints" placeholder="0" class="input-field text-sm">
-                </div>
-                <div class="md:col-span-2">
-                    <label class="block text-[10px] font-bold text-slate-400 mb-1">当選アイテム</label>
-                    <input type="text" id="highPrize" placeholder="アイテム名" class="input-field text-sm">
-                </div>
-            </form>
+            </div>
         </div>
 
-        <!-- カレンダーセクション (常に全幅) -->
-        <div class="space-y-4">
-            <div class="flex justify-between items-center px-2">
-                <h2 class="text-xl font-black text-slate-700 flex items-center gap-2">📅 利用カレンダー</h2>
-                <div id="calendar_label" class="text-sm font-bold text-indigo-700 bg-indigo-50 px-4 py-2 rounded-lg border border-indigo-100"></div>
-            </div>
-            <div class="bg-white p-2 rounded-2xl shadow-md border border-slate-200">
+        <!-- PC表示時も縦並びにするためflex-colを指定 -->
+        <div class="flex flex-col gap-8 pb-12">
+            <!-- Calendar Section -->
+            <div class="card">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold flex items-center gap-2">📅 利用カレンダー</h2>
+                    <div id="calendar_label" class="text-sm font-bold text-indigo-600 bg-indigo-50 px-4 py-1.5 rounded-full"></div>
+                </div>
                 <div id="calendar_container" class="calendar-grid"></div>
             </div>
-        </div>
 
-        <!-- グラフセクション (常に全幅) -->
-        <div class="card">
-            <h2 class="text-xl font-black text-slate-700 mb-6 flex items-center gap-2">📊 サービス別分析</h2>
-            <div class="h-[350px] w-full">
-                <canvas id="analysisChart"></canvas>
-            </div>
-        </div>
-
-        <!-- 履歴テーブル -->
-        <div class="card !p-0 overflow-hidden">
-            <div class="p-4 border-b bg-slate-50 flex justify-between items-center">
-                <h2 class="font-bold text-slate-700">利用履歴</h2>
-                <div class="flex gap-2">
-                    <select id="monthFilter" class="p-1.5 border rounded-lg text-xs bg-white font-bold outline-none"></select>
+            <!-- Chart Section -->
+            <div class="card">
+                <h2 class="text-xl font-bold mb-6 flex items-center gap-2">📊 サービス別分析</h2>
+                <div class="h-[400px] w-full relative">
+                    <canvas id="analysisChart"></canvas>
                 </div>
             </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm">
-                    <thead class="bg-slate-50 text-[10px] text-slate-400 font-black uppercase tracking-wider border-b">
-                        <tr>
-                            <th class="p-4">日付/サービス</th>
-                            <th class="p-4">支払</th>
-                            <th class="p-4">消費</th>
-                            <th class="p-4">残高</th>
-                            <th class="p-4 text-right">修正</th>
-                        </tr>
-                    </thead>
-                    <tbody id="historyBody" class="divide-y divide-slate-100"></tbody>
-                </table>
-            </div>
         </div>
-
     </main>
 
     <script type="module">
@@ -288,18 +254,28 @@
 
         function setupFilters() {
             const months = new Set();
+            const services = new Set();
             records.forEach(r => {
                 const p = r.date.split('/');
                 months.add(`${p[0]}/${parseInt(p[1])}`);
+                services.add(r.service);
             });
+            
             const mf = document.getElementById('monthFilter');
+            const sf = document.getElementById('serviceFilter');
             const mVal = mf.value;
-            mf.innerHTML = Array.from(months).sort().reverse().map(m => `<option value="${m}">${m}月</option>`).join('') || `<option value="${new Date().getFullYear()}/${new Date().getMonth()+1}">今月</option>`;
+            const sVal = sf.value;
+
+            mf.innerHTML = Array.from(months).sort().reverse().map(m => `<option value="${m}">${m.split('/')[0]}年 ${m.split('/')[1]}月</option>`).join('') || `<option value="${new Date().getFullYear()}/${new Date().getMonth()+1}">今月</option>`;
+            sf.innerHTML = '<option value="all">全サービス表示</option>' + Array.from(services).sort().map(s => `<option value="${s}">${s}</option>`).join('');
+
             mf.value = mVal || mf.firstChild?.value || "";
+            sf.value = sVal || "all";
         }
 
         function renderUI() {
             const m = document.getElementById('monthFilter').value;
+            const s = document.getElementById('serviceFilter').value;
             const currentBalances = {};
             const serviceSummary = {};
             let tCash = 0, mCash = 0, mPrizes = 0;
@@ -310,7 +286,7 @@
                 serviceSummary[r.service].invest += r.cash;
                 serviceSummary[r.service].gain += (r.added + (r.won || 0));
                 tCash += r.cash;
-                if(r.date.startsWith(m)) {
+                if(r.date.startsWith(m.replace('/','/'))) {
                     mCash += r.cash;
                     if(r.prize) mPrizes++;
                 }
@@ -321,13 +297,13 @@
             document.getElementById('stat_total_cash').innerText = `¥${tCash.toLocaleString()}`;
             document.getElementById('label_month').innerText = `${m.split('/')[1] || ''}月の支払額`;
 
-            const filtered = records.filter(r => r.date.startsWith(m));
+            const filtered = records.filter(r => r.date.includes(m.replace('/','/')) && (s === 'all' || r.service === s));
             document.getElementById('historyBody').innerHTML = filtered.map(r => `
-                <tr class="hover:bg-slate-50">
-                    <td class="p-4"><div class="text-[9px] text-slate-400 font-mono">${r.date}</div><div class="font-bold text-slate-700">${r.service}</div></td>
-                    <td class="p-4 text-rose-500 font-bold">¥${r.cash.toLocaleString()}</td>
-                    <td class="p-4 text-slate-500">${r.spent.toLocaleString()}</td>
-                    <td class="p-4 text-indigo-600 font-black">${r.runningBalance.toLocaleString()}</td>
+                <tr class="hover:bg-slate-50 border-b border-slate-100">
+                    <td class="p-4"><div class="text-[10px] text-slate-400 font-mono">${r.date}</div><div class="font-bold text-slate-700">${r.service}</div></td>
+                    <td class="p-4 text-center text-rose-500 font-bold">¥${r.cash.toLocaleString()}</td>
+                    <td class="p-4 text-center text-orange-500">-${r.spent.toLocaleString()}</td>
+                    <td class="p-4 text-center text-indigo-600 font-black">${r.runningBalance.toLocaleString()}</td>
                     <td class="p-4 text-right"><button onclick="window.editRecord('${r.id}')" class="text-indigo-600 text-xs font-bold">修正</button></td>
                 </tr>
             `).join('');
@@ -350,7 +326,7 @@
             const last = new Date(y, m, 0).getDate();
             
             let html = ['日','月','火','水','木','金','土'].map(d => `<div class="calendar-header">${d}</div>`).join('');
-            for(let i=0; i<first; i++) html += `<div class="calendar-day bg-slate-50/30"></div>`;
+            for(let i=0; i<first; i++) html += `<div class="bg-slate-50/50 border-r border-b border-slate-300"></div>`;
             
             for(let d=1; d<=last; d++) {
                 const dayRecs = records.filter(r => {
@@ -363,7 +339,7 @@
                 html += `
                     <div class="calendar-day ${isToday ? 'calendar-today' : ''}">
                         <div class="day-num">${d}</div>
-                        <div class="flex flex-col gap-0.5">
+                        <div class="flex flex-col">
                             ${services.map(s => `<span class="calendar-tag">${s}</span>`).join('')}
                         </div>
                     </div>
@@ -381,8 +357,8 @@
                 data: {
                     labels: labels,
                     datasets: [
-                        { label: '投資(円)', data: labels.map(l => summary[l].invest), backgroundColor: '#fb7185' },
-                        { label: '残高(pt)', data: labels.map(l => summary[l].bal), backgroundColor: '#818cf8' }
+                        { label: '総投資(円)', data: labels.map(l => summary[l].invest), backgroundColor: '#fb7185' },
+                        { label: '現在の残高', data: labels.map(l => summary[l].bal), backgroundColor: '#818cf8' }
                     ]
                 },
                 options: { responsive: true, maintainAspectRatio: false }
@@ -398,7 +374,7 @@
             document.getElementById('spentPoints').value = r.spent;
             document.getElementById('winPoints').value = r.won;
             document.getElementById('highPrize').value = r.prize;
-            document.getElementById('submitBtn').innerText = "修正";
+            document.getElementById('submitBtn').innerText = "修正を保存";
             document.getElementById('cancelEdit').classList.remove('hidden');
             window.scrollTo({ top: 0, behavior: 'smooth' });
         };
@@ -419,11 +395,12 @@
             await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'records', docId), data);
             document.getElementById('recordForm').reset();
             document.getElementById('editing_id').value = "";
-            document.getElementById('submitBtn').innerText = "保存";
+            document.getElementById('submitBtn').innerText = "データを保存";
             document.getElementById('cancelEdit').classList.add('hidden');
         });
 
         document.getElementById('monthFilter').addEventListener('change', renderUI);
+        document.getElementById('serviceFilter').addEventListener('change', renderUI);
     </script>
 </body>
 </html>
