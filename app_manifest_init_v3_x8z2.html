@@ -17,7 +17,6 @@
         .card { @apply bg-white p-6 rounded-2xl shadow-md border border-slate-200; }
         .input-field { @apply w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-indigo-500 transition; }
         
-        /* カレンダー用スタイル */
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; @apply bg-slate-200 border border-slate-200 rounded-lg overflow-hidden; }
         .calendar-day { @apply bg-white p-2 min-h-[80px] text-xs transition hover:bg-slate-50; }
         .calendar-header { @apply bg-slate-50 p-2 text-center text-[10px] font-bold text-slate-400; }
@@ -27,17 +26,19 @@
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-800">
 
-    <!-- Auth Overlay -->
+    <!-- Loading/Auth Overlay -->
     <div id="auth_overlay" class="loading-overlay flex-col gap-6">
         <div id="loader_icon" class="animate-spin h-12 w-12 border-4 border-indigo-600 border-t-transparent rounded-full"></div>
-        <div id="login_ui" class="hidden flex flex-col items-center gap-4">
+        <div id="login_ui" class="hidden flex flex-col items-center gap-4 text-center px-4">
             <h1 class="text-2xl font-black text-indigo-700">💎 オリパ管理 Pro</h1>
+            <p class="text-sm text-slate-500 max-w-xs">ご利用にはGoogleログインが必要です。<br>データはクラウドに安全に保存されます。</p>
             <button id="googleLoginBtn" class="flex items-center gap-3 bg-white border border-slate-300 px-6 py-3 rounded-full font-bold shadow-sm hover:shadow-md transition active:scale-95">
                 <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20">
                 Googleでログイン
             </button>
+            <div id="error_message" class="mt-4 text-red-500 text-xs hidden"></div>
         </div>
-        <p id="status_text" class="text-sm font-bold text-slate-600">接続中...</p>
+        <p id="status_text" class="text-sm font-bold text-slate-400 uppercase tracking-widest">Initialising Cloud...</p>
     </div>
 
     <!-- Navigation -->
@@ -45,7 +46,7 @@
         <div class="max-w-7xl mx-auto flex justify-between items-center">
             <h1 class="text-xl font-bold flex items-center gap-2"><span>💎</span> オリパ管理 Pro</h1>
             <div class="flex items-center gap-3">
-                <span id="auto_logout_timer" class="text-[10px] bg-indigo-600 px-2 py-1 rounded opacity-70">自動切断まで 30:00</span>
+                <span id="auto_logout_timer" class="text-[10px] bg-indigo-600 px-2 py-1 rounded opacity-70">SESSION: 30:00</span>
                 <button id="logoutBtn" class="text-[10px] bg-indigo-800 hover:bg-indigo-900 px-2 py-1 rounded border border-indigo-600">ログアウト</button>
                 <img id="user_photo" class="h-8 w-8 rounded-full border-2 border-white hidden">
             </div>
@@ -57,7 +58,7 @@
         <!-- Summary Dashboard -->
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
             <div class="lg:col-span-1 card">
-                <h2 class="text-xs font-bold text-slate-400 uppercase mb-4 tracking-widest">💳 現在の最新残高</h2>
+                <h2 class="text-xs font-bold text-slate-400 uppercase mb-4 tracking-widest">💳 現在の残高</h2>
                 <div id="service_balances" class="space-y-2 max-h-[300px] overflow-y-auto text-sm"></div>
             </div>
             <div class="lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
@@ -78,17 +79,13 @@
 
         <!-- Analysis Section -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- Calendar -->
             <div class="card">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-lg font-bold">📅 利用カレンダー</h2>
                     <div id="calendar_month_label" class="text-sm font-bold text-indigo-600"></div>
                 </div>
-                <div id="calendar_container" class="calendar-grid">
-                    <!-- JSで描画 -->
-                </div>
+                <div id="calendar_container" class="calendar-grid"></div>
             </div>
-            <!-- Graph -->
             <div class="card">
                 <h2 class="text-lg font-bold mb-4">📊 サービス別 比較分析</h2>
                 <div class="h-[300px] relative">
@@ -99,7 +96,6 @@
 
         <!-- Main Workspace -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Form -->
             <div class="lg:col-span-1">
                 <div class="card">
                     <h2 class="text-lg font-bold mb-4 flex justify-between">
@@ -142,7 +138,6 @@
                 </div>
             </div>
 
-            <!-- History -->
             <div class="lg:col-span-2 card !p-0 overflow-hidden flex flex-col">
                 <div class="p-4 border-b bg-slate-50 flex flex-wrap gap-3 justify-between items-center">
                     <div class="flex gap-2 items-center">
@@ -172,66 +167,98 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyDyblCmPzgaK0hhmGMnvvmm1O7LksLaySk",
-            authDomain: "my-managertool-project.firebaseapp.com",
-            projectId: "my-managertool-project",
-            storageBucket: "my-managertool-project.firebasestorage.app",
-            messagingSenderId: "44256475690",
-            appId: "1:44256475690:web:5ac7faa743b06c0a3ee153"
+        // Global variables provided by environment
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            apiKey: "", // Placeholder if not provided
+            authDomain: "managed-app.firebaseapp.com",
+            projectId: "managed-app",
+            storageBucket: "managed-app.firebasestorage.app",
+            messagingSenderId: "00000000",
+            appId: "1:0000:web:0000"
         };
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'oripa-pro-cloud-v2';
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
         const provider = new GoogleAuthProvider();
-        const appId = 'oripa-pro-cloud-google-v1';
 
         let user = null;
         let records = [];
         let unsubscribeSync = null;
         let analysisChart = null;
 
-        // Auto Logout
+        // Auto Logout Logic
         let timeLeft = 30 * 60 * 1000;
-        let logoutTimer;
         function resetLogoutTimer() {
             if (!user) return;
-            clearTimeout(logoutTimer);
             timeLeft = 30 * 60 * 1000;
-            logoutTimer = setTimeout(() => { signOut(auth).then(() => location.reload()); }, timeLeft);
         }
         setInterval(() => {
             if (!user) return;
             timeLeft -= 1000;
             const timerEl = document.getElementById('auto_logout_timer');
-            if(timerEl) timerEl.innerText = `自動切断まで ${Math.floor(timeLeft/60000)}:${Math.floor((timeLeft%60000)/1000).toString().padStart(2,'0')}`;
+            if(timerEl) timerEl.innerText = `SESSION: ${Math.floor(timeLeft/60000)}:${Math.floor((timeLeft%60000)/1000).toString().padStart(2,'0')}`;
+            if(timeLeft <= 0) signOut(auth).then(() => location.reload());
         }, 1000);
         ['mousedown', 'keydown', 'touchstart'].forEach(e => window.addEventListener(e, resetLogoutTimer));
+
+        // Initial Auth Setup (RULE 3)
+        const initAuth = async () => {
+            try {
+                // Try anonymous first if no popup action, or wait for observer
+                await signInAnonymously(auth);
+            } catch (err) {
+                console.error("Auth init error:", err);
+                showError("認証の初期化に失敗しました。");
+            }
+        };
 
         onAuthStateChanged(auth, u => {
             if (u) {
                 user = u;
-                resetLogoutTimer();
-                document.getElementById('user_photo').src = u.photoURL;
+                document.getElementById('user_photo').src = u.photoURL || "https://ui-avatars.com/api/?name=User";
                 document.getElementById('user_photo').classList.remove('hidden');
+                document.getElementById('auth_overlay').classList.add('pointer-events-none');
                 startSync();
             } else {
                 if (unsubscribeSync) unsubscribeSync();
                 document.getElementById('login_ui').classList.remove('hidden');
                 document.getElementById('loader_icon').classList.add('hidden');
+                document.getElementById('status_text').innerText = "Waiting for Login";
             }
         });
 
-        document.getElementById('googleLoginBtn').onclick = () => signInWithPopup(auth, provider);
-        document.getElementById('logoutBtn').onclick = () => { if(confirm("ログアウトしますか？")) signOut(auth).then(() => location.reload()); };
+        document.getElementById('googleLoginBtn').onclick = async () => {
+            try {
+                await signInWithPopup(auth, provider);
+            } catch (err) {
+                showError("ログインに失敗しました。ポップアップがブロックされていないか確認してください。");
+            }
+        };
+
+        document.getElementById('logoutBtn').onclick = () => { 
+            if(confirm("ログアウトしますか？")) signOut(auth).then(() => location.reload()); 
+        };
+
+        function showError(msg) {
+            const errEl = document.getElementById('error_message');
+            errEl.innerText = msg;
+            errEl.classList.remove('hidden');
+        }
 
         function startSync() {
+            // Guard every firestore operation (RULE 3)
+            if (!user) return;
+
+            // Using simple collection query to avoid indexing issues (RULE 2)
+            const colPath = `/artifacts/${appId}/users/${user.uid}/records`;
             const colRef = collection(db, 'artifacts', appId, 'users', user.uid, 'records');
-            unsubscribeSync = onSnapshot(colRef, snapshot => {
+            
+            unsubscribeSync = onSnapshot(colRef, (snapshot) => {
                 const raw = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
                     .sort((a, b) => parseInt(a.id) - parseInt(b.id));
                 
@@ -243,9 +270,13 @@
 
                 setupFilters();
                 renderUI();
+                
                 document.getElementById('auth_overlay').style.opacity = '0';
                 setTimeout(() => document.getElementById('auth_overlay').style.display = 'none', 500);
                 document.getElementById('app_content').classList.remove('opacity-0');
+            }, (err) => {
+                console.error("Firestore sync error:", err);
+                showError("データの読み込みに失敗しました。権限設定を確認してください。");
             });
         }
 
@@ -275,13 +306,12 @@
             
             let monthCash = 0, totalCash = 0, monthPrizes = 0;
             const latestBalances = {};
-            const serviceSummary = {}; // For Chart
+            const serviceSummary = {};
 
             records.forEach(r => {
                 if (!latestBalances[r.service]) latestBalances[r.service] = r.runningBalance;
                 totalCash += r.cash;
 
-                // Summary Data for Chart
                 if (!serviceSummary[r.service]) serviceSummary[r.service] = { cash: 0, rewards: 0, balance: 0 };
                 serviceSummary[r.service].cash += r.cash;
                 serviceSummary[r.service].rewards += (r.added + r.won);
@@ -298,7 +328,6 @@
             document.getElementById('stat_monthly_prizes').innerText = monthPrizes;
             document.getElementById('stat_total_cash').innerText = `¥${totalCash.toLocaleString()}`;
 
-            // Sidebar Balance
             document.getElementById('service_balances').innerHTML = Object.entries(latestBalances).sort((a,b)=>b[1]-a[1]).map(([n, b]) => `
                 <div class="flex justify-between items-center bg-slate-50 p-2.5 rounded-xl border border-slate-100 mb-2">
                     <span class="font-bold text-slate-600 truncate mr-2">${n}</span>
@@ -306,10 +335,151 @@
                 </div>
             `).join('');
 
-            // History Table
             const filtered = records.filter(r => {
                 const p = r.date.split('/');
                 return `${p[0]}/${parseInt(p[1])}` === selMonth && (selService === 'all' || r.service === selService);
             });
+            
             document.getElementById('historyBody').innerHTML = filtered.map(r => `
                 <tr class="hover:bg-slate-50 border-b">
+                    <td class="p-4">
+                        <div class="text-[9px] text-slate-400 font-mono">${r.date}</div>
+                        <div class="font-bold text-slate-700">${r.service}</div>
+                        ${r.prize ? `<div class="text-[9px] text-amber-600 font-bold">🏆 ${r.prize}</div>` : ''}
+                    </td>
+                    <td class="p-4 text-center">
+                        <div class="text-rose-500 font-bold">¥${r.cash.toLocaleString()}</div>
+                        ${r.added > 0 ? `<div class="text-[9px] text-emerald-500">+${r.added.toLocaleString()}pt</div>` : ''}
+                    </td>
+                    <td class="p-4 text-center text-orange-500 font-medium">${r.spent > 0 ? `-${r.spent.toLocaleString()}` : '-'}</td>
+                    <td class="p-4 text-center">
+                        <div class="font-black text-indigo-600">${r.runningBalance.toLocaleString()}</div>
+                        ${r.won > 0 ? `<div class="text-[9px] text-emerald-500">当選 +${r.won.toLocaleString()}</div>` : ''}
+                    </td>
+                    <td class="p-4 text-right">
+                        <button onclick="window.editRecord('${r.id}')" class="text-indigo-600 font-bold mr-2">修正</button>
+                        <button onclick="window.deleteRecord('${r.id}')" class="text-slate-300 hover:text-red-500">×</button>
+                    </td>
+                </tr>
+            `).join('');
+
+            renderCalendar(selMonth);
+            renderChart(serviceSummary);
+            document.getElementById('service_suggestions').innerHTML = Object.keys(latestBalances).map(n => `<option value="${n}">`).join('');
+        }
+
+        function renderCalendar(monthStr) {
+            const [year, month] = monthStr.split('/').map(Number);
+            document.getElementById('calendar_month_label').innerText = `${year}年 ${month}月`;
+            
+            const firstDay = new Date(year, month - 1, 1).getDay();
+            const lastDate = new Date(year, month, 0).getDate();
+            const container = document.getElementById('calendar_container');
+            
+            let html = ['日','月','火','水','木','金','土'].map(d => `<div class="calendar-header">${d}</div>`).join('');
+            for(let i=0; i<firstDay; i++) html += `<div class="calendar-day bg-slate-50 opacity-30"></div>`;
+            
+            for(let d=1; d<=lastDate; d++) {
+                const dateKey = `${year}/${month}/${d}`;
+                const dayRecords = records.filter(r => {
+                    const rp = r.date.split('/');
+                    return `${rp[0]}/${parseInt(rp[1])}/${parseInt(rp[2])}` === dateKey;
+                });
+                const isToday = new Date().toLocaleDateString('ja-JP') === new Date(year, month-1, d).toLocaleDateString('ja-JP');
+                html += `
+                    <div class="calendar-day ${isToday ? 'calendar-today' : ''}">
+                        <div class="font-bold ${isToday ? 'text-indigo-600' : 'text-slate-400'}">${d}</div>
+                        ${[...new Set(dayRecords.map(r=>r.service))].map(s => `<span class="calendar-tag">${s}</span>`).join('')}
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+        }
+
+        function renderChart(summary) {
+            const ctx = document.getElementById('analysisChart').getContext('2d');
+            const labels = Object.keys(summary);
+            if (labels.length === 0) return;
+            const cashData = labels.map(l => summary[l].cash);
+            const rewardData = labels.map(l => summary[l].rewards);
+            const balanceData = labels.map(l => summary[l].balance);
+
+            if (analysisChart) analysisChart.destroy();
+            analysisChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: '投資累計(円)', data: cashData, backgroundColor: '#f43f5e' },
+                        { label: '付与pt累計', data: rewardData, backgroundColor: '#10b981' },
+                        { label: '現在庫pt', data: balanceData, backgroundColor: '#6366f1' }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true, grid: { display: false } }, x: { grid: { display: false } } },
+                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } } }
+                }
+            });
+        }
+
+        window.editRecord = id => {
+            const r = records.find(rec => rec.id == id);
+            if(!r) return;
+            document.getElementById('editing_id').value = r.id;
+            document.getElementById('serviceName').value = r.service;
+            document.getElementById('cashAmount').value = r.cash;
+            document.getElementById('addedPoints').value = r.added;
+            document.getElementById('spentPoints').value = r.spent;
+            document.getElementById('winPoints').value = r.won;
+            document.getElementById('highPrize').value = r.prize;
+            document.getElementById('submitBtn').innerText = "修正を保存";
+            document.getElementById('cancelEdit').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        window.deleteRecord = async id => { 
+            if(!user) return;
+            if(confirm("削除しますか？")) {
+                await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'records', String(id))); 
+            }
+        };
+
+        document.getElementById('recordForm').onsubmit = async (e) => {
+            e.preventDefault();
+            if(!user) return;
+            const editId = document.getElementById('editing_id').value;
+            const docId = editId || `${Date.now()}`;
+            const data = {
+                date: editId ? records.find(r => r.id === editId).date : new Date().toLocaleDateString('ja-JP'),
+                service: document.getElementById('serviceName').value.trim(),
+                cash: parseInt(document.getElementById('cashAmount').value) || 0,
+                added: parseInt(document.getElementById('addedPoints').value) || 0,
+                spent: parseInt(document.getElementById('spentPoints').value) || 0,
+                won: parseInt(document.getElementById('winPoints').value) || 0,
+                prize: document.getElementById('highPrize').value.trim()
+            };
+            await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'records', docId), data);
+            document.getElementById('recordForm').reset();
+            document.getElementById('editing_id').value = "";
+            document.getElementById('submitBtn').innerText = "データを保存";
+            document.getElementById('cancelEdit').classList.add('hidden');
+        };
+
+        document.getElementById('cancelEdit').onclick = () => {
+            document.getElementById('recordForm').reset();
+            document.getElementById('editing_id').value = "";
+            document.getElementById('submitBtn').innerText = "データを保存";
+            document.getElementById('cancelEdit').classList.add('hidden');
+        };
+
+        document.getElementById('monthFilter').onchange = renderUI;
+        document.getElementById('serviceFilter').onchange = renderUI;
+
+        // Start
+        initAuth();
+
+    </script>
+</body>
+</html>
