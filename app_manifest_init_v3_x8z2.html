@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="ja">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,46 +7,25 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap');
-
-        body {
-            font-family: 'Noto Sans JP', sans-serif;
-        }
-
+        body { font-family: 'Noto Sans JP', sans-serif; }
         .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            transition: opacity 0.5s;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: white; display: flex; align-items: center;
+            justify-content: center; z-index: 1000; transition: opacity 0.5s;
         }
-
-        .card {
-            @apply bg-white p-6 rounded-2xl shadow-md border border-slate-200;
-        }
-
-        .input-field {
-            @apply w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-indigo-500 transition;
-        }
+        .card { @apply bg-white p-6 rounded-2xl shadow-md border border-slate-200; }
+        .input-field { @apply w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-indigo-500 transition; }
     </style>
 </head>
-
 <body class="bg-slate-50 min-h-screen text-slate-800">
 
     <!-- Auth Overlay -->
     <div id="auth_overlay" class="loading-overlay flex-col gap-6">
-        <div id="loader_icon"
-            class="animate-spin h-12 w-12 border-4 border-indigo-600 border-t-transparent rounded-full"></div>
+        <div id="loader_icon" class="animate-spin h-12 w-12 border-4 border-indigo-600 border-t-transparent rounded-full"></div>
         <div id="login_ui" class="hidden flex flex-col items-center gap-4">
             <h1 class="text-2xl font-black text-indigo-700">💎 オリパ管理 Pro</h1>
             <p class="text-slate-500 text-sm mb-4">ログインしてデータを管理</p>
-            <button id="googleLoginBtn"
-                class="flex items-center gap-3 bg-white border border-slate-300 px-6 py-3 rounded-full font-bold shadow-sm hover:shadow-md transition active:scale-95">
+            <button id="googleLoginBtn" class="flex items-center gap-3 bg-white border border-slate-300 px-6 py-3 rounded-full font-bold shadow-sm hover:shadow-md transition active:scale-95">
                 <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20">
                 Googleでログイン
             </button>
@@ -60,17 +38,16 @@
         <div class="max-w-6xl mx-auto flex justify-between items-center">
             <h1 class="text-xl font-bold flex items-center gap-2"><span>💎</span> オリパ管理 Pro</h1>
             <div class="flex items-center gap-3">
-                <span id="auto_logout_timer" class="text-[10px] bg-indigo-600 px-2 py-1 rounded opacity-70">自動切断まで
-                    30:00</span>
-                <button id="logoutBtn"
-                    class="text-[10px] bg-indigo-800 hover:bg-indigo-900 px-2 py-1 rounded border border-indigo-600">ログアウト</button>
+                <span id="auto_logout_timer" class="text-[10px] bg-indigo-600 px-2 py-1 rounded opacity-70">自動切断まで 30:00</span>
+                <button id="logoutBtn" class="text-[10px] bg-indigo-800 hover:bg-indigo-900 px-2 py-1 rounded border border-indigo-600">ログアウト</button>
                 <img id="user_photo" class="h-8 w-8 rounded-full border-2 border-white hidden">
             </div>
         </div>
     </nav>
 
     <main id="app_content" class="max-w-6xl mx-auto p-4 md:p-6 space-y-6 opacity-0 transition-opacity duration-500">
-
+        
+        <!-- Summary Dashboard -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div class="lg:col-span-1 card">
                 <h2 class="text-xs font-bold text-slate-400 uppercase mb-4 tracking-widest">💳 現在の最新残高</h2>
@@ -92,6 +69,7 @@
             </div>
         </div>
 
+        <!-- Forms and History -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div class="lg:col-span-1">
                 <div class="card">
@@ -103,53 +81,51 @@
                         <input type="hidden" id="editing_id">
                         <div>
                             <label class="block text-xs font-bold text-slate-500 mb-1">サービス名</label>
-                            <input type="text" id="serviceName" list="service_suggestions" class="input-field"
-                                placeholder="DOPA, 日本トレカセンターなど" required>
+                            <input type="text" id="serviceName" list="service_suggestions" class="input-field" placeholder="DOPA, 日本トレカセンターなど" required>
                             <datalist id="service_suggestions"></datalist>
                         </div>
                         <div class="grid grid-cols-2 gap-3 bg-indigo-50 p-3 rounded-lg">
                             <div>
                                 <label class="block text-[10px] font-bold text-indigo-400 mb-1">支払額(円)</label>
-                                <input type="number" id="cashAmount" placeholder="0"
-                                    class="p-2 border rounded-lg w-full outline-none">
+                                <input type="number" id="cashAmount" placeholder="0" class="p-2 border rounded-lg w-full outline-none">
                             </div>
                             <div>
                                 <label class="block text-[10px] font-bold text-indigo-400 mb-1">チャージpts</label>
-                                <input type="number" id="addedPoints" placeholder="0"
-                                    class="p-2 border rounded-lg w-full outline-none">
+                                <input type="number" id="addedPoints" placeholder="0" class="p-2 border rounded-lg w-full outline-none">
                             </div>
                         </div>
                         <div class="grid grid-cols-2 gap-3 bg-orange-50 p-3 rounded-lg">
                             <div>
                                 <label class="block text-[10px] font-bold text-orange-400 mb-1">消費pts</label>
-                                <input type="number" id="spentPoints" placeholder="0"
-                                    class="p-2 border rounded-lg w-full outline-none">
+                                <input type="number" id="spentPoints" placeholder="0" class="p-2 border rounded-lg w-full outline-none">
                             </div>
                             <div>
                                 <label class="block text-[10px] font-bold text-orange-400 mb-1">当選pts</label>
-                                <input type="number" id="winPoints" placeholder="0"
-                                    class="p-2 border rounded-lg w-full outline-none">
+                                <input type="number" id="winPoints" placeholder="0" class="p-2 border rounded-lg w-full outline-none">
                             </div>
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-500 mb-1">高額当選アイテム（任意）</label>
                             <input type="text" id="highPrize" placeholder="PSA10 リザードンなど" class="input-field">
                         </div>
-                        <button type="submit" id="submitBtn"
-                            class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-xl shadow-lg transition active:scale-95">データを保存</button>
+                        <button type="submit" id="submitBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-xl shadow-lg transition active:scale-95">データを保存</button>
                     </form>
                 </div>
             </div>
 
+            <!-- History Table -->
             <div class="lg:col-span-2 card !p-0 overflow-hidden">
-                <div class="p-4 border-b bg-slate-50 flex justify-between items-center">
-                    <select id="monthFilter"
-                        class="p-1.5 border rounded-lg text-sm bg-white outline-none font-bold"></select>
+                <div class="p-4 border-b bg-slate-50 flex flex-wrap gap-3 justify-between items-center">
+                    <div class="flex gap-2 items-center">
+                        <select id="monthFilter" class="p-1.5 border rounded-lg text-sm bg-white outline-none font-bold shadow-sm"></select>
+                        <select id="serviceFilter" class="p-1.5 border rounded-lg text-sm bg-white outline-none font-bold shadow-sm">
+                            <option value="all">全サービス表示</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left">
-                        <thead
-                            class="bg-slate-50 text-[10px] text-slate-400 font-black border-b uppercase tracking-wider">
+                        <thead class="bg-slate-50 text-[10px] text-slate-400 font-black border-b uppercase tracking-wider">
                             <tr>
                                 <th class="p-4">日付 / サービス</th>
                                 <th class="p-4 text-center">支払額</th>
@@ -170,9 +146,9 @@
         import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // ==========================================================
-        // 取得した Firebase Config をここに貼り付けてください
-        // ==========================================================
+        // ==========================================
+        // Firebase Config
+        // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyDyblCmPzgaK0hhmGMnvvmm1O7LksLaySk",
             authDomain: "my-managertool-project.firebaseapp.com",
@@ -181,7 +157,6 @@
             messagingSenderId: "44256475690",
             appId: "1:44256475690:web:5ac7faa743b06c0a3ee153"
         };
-        // ==========================================================
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -216,7 +191,7 @@
             const mins = Math.max(0, Math.floor(timeLeft / 60000));
             const secs = Math.max(0, Math.floor((timeLeft % 60000) / 1000));
             const timerEl = document.getElementById('auto_logout_timer');
-            if (timerEl) timerEl.innerText = `自動切断まで ${mins}:${secs.toString().padStart(2, '0')}`;
+            if(timerEl) timerEl.innerText = `自動切断まで ${mins}:${secs.toString().padStart(2, '0')}`;
         }, 1000);
 
         ['mousedown', 'keydown', 'touchstart'].forEach(e => window.addEventListener(e, resetLogoutTimer));
@@ -226,7 +201,7 @@
                 user = u;
                 resetLogoutTimer();
                 const photo = document.getElementById('user_photo');
-                if (photo) {
+                if(photo) {
                     photo.src = u.photoURL;
                     photo.classList.remove('hidden');
                 }
@@ -243,7 +218,7 @@
         });
 
         document.getElementById('googleLoginBtn').addEventListener('click', () => signInWithPopup(auth, provider));
-        document.getElementById('logoutBtn').addEventListener('click', () => { if (confirm("ログアウトしますか？")) signOut(auth).then(() => location.reload()); });
+        document.getElementById('logoutBtn').addEventListener('click', () => { if(confirm("ログアウトしますか？")) signOut(auth).then(() => location.reload()); });
 
         function startSync() {
             if (!user) return;
@@ -251,7 +226,8 @@
             unsubscribeSync = onSnapshot(colRef, (snapshot) => {
                 const rawRecords = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
                     .sort((a, b) => parseInt(a.id) - parseInt(b.id));
-
+                
+                // Calculate Running Balance per Service
                 const serviceBalMap = {};
                 records = rawRecords.map(r => {
                     serviceBalMap[r.service] = (serviceBalMap[r.service] || 0) + (r.added + (r.won || 0) - (r.spent || 0));
@@ -259,7 +235,9 @@
                 }).reverse();
 
                 setupMonthFilter();
+                setupServiceFilter();
                 renderUI();
+                
                 document.getElementById('auth_overlay').style.opacity = '0';
                 setTimeout(() => { if (user) document.getElementById('auth_overlay').style.display = 'none'; }, 500);
                 document.getElementById('app_content').classList.remove('opacity-0');
@@ -300,8 +278,8 @@
         };
 
         window.deleteRecord = async (id) => {
-            if (!user) return;
-            if (confirm("削除しますか？")) await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'records', String(id)));
+            if(!user) return;
+            if(confirm("削除しますか？")) await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'records', String(id)));
         };
 
         function resetForm() {
@@ -312,7 +290,7 @@
         }
 
         function setupMonthFilter() {
-            const months = new Set([`${new Date().getFullYear()}/${new Date().getMonth() + 1}`]);
+            const months = new Set([`${new Date().getFullYear()}/${new Date().getMonth()+1}`]);
             records.forEach(r => { const p = r.date.split('/'); months.add(`${p[0]}/${parseInt(p[1])}`); });
             const f = document.getElementById('monthFilter');
             const cur = f.value;
@@ -320,20 +298,33 @@
             f.value = cur || Array.from(months)[0];
         }
 
+        function setupServiceFilter() {
+            const services = new Set();
+            records.forEach(r => services.add(r.service));
+            const f = document.getElementById('serviceFilter');
+            const cur = f.value;
+            f.innerHTML = '<option value="all">全サービス表示</option>' + 
+                          Array.from(services).sort().map(s => `<option value="${s}">${s}</option>`).join('');
+            f.value = cur || "all";
+        }
+
         function renderUI() {
             const selectedMonth = document.getElementById('monthFilter').value;
+            const selectedService = document.getElementById('serviceFilter').value;
             const currentBalances = {};
             let totalCash = 0, monthCash = 0, monthPrizes = 0;
 
+            // Calculate overall stats and balances
             records.forEach(r => {
                 if (!currentBalances[r.service]) {
                     currentBalances[r.service] = r.runningBalance;
                 }
                 totalCash += r.cash;
+                
                 const p = r.date.split('/');
-                if (`${p[0]}/${parseInt(p[1])}` === selectedMonth) {
+                if(`${p[0]}/${parseInt(p[1])}` === selectedMonth) {
                     monthCash += r.cash;
-                    if (r.prize) monthPrizes++;
+                    if(r.prize) monthPrizes++;
                 }
             });
 
@@ -342,9 +333,12 @@
             document.getElementById('stat_total_cash').innerText = `¥${totalCash.toLocaleString()}`;
             document.getElementById('label_month').innerText = `${selectedMonth.split('/')[1]}月の支払額`;
 
+            // Filter history
             const filtered = records.filter(r => {
                 const p = r.date.split('/');
-                return `${p[0]}/${parseInt(p[1])}` === selectedMonth;
+                const monthMatch = `${p[0]}/${parseInt(p[1])}` === selectedMonth;
+                const serviceMatch = selectedService === 'all' || r.service === selectedService;
+                return monthMatch && serviceMatch;
             });
 
             document.getElementById('historyBody').innerHTML = filtered.length ? filtered.map(r => `
@@ -372,7 +366,8 @@
                 </tr>
             `).join('') : `<tr><td colspan="5" class="p-10 text-center text-slate-400">履歴がありません</td></tr>`;
 
-            document.getElementById('service_balances').innerHTML = Object.entries(currentBalances).length ? Object.entries(currentBalances).sort((a, b) => b[1] - a[1]).map(([n, b]) => `
+            // Balance Sidebar UI
+            document.getElementById('service_balances').innerHTML = Object.entries(currentBalances).length ? Object.entries(currentBalances).sort((a,b)=>b[1]-a[1]).map(([n, b]) => `
                 <div class="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100 mb-2">
                     <span class="font-bold text-slate-600">${n}</span>
                     <span class="font-mono text-indigo-600 font-black">${b.toLocaleString()} <span class="text-[8px]">pts</span></span>
@@ -385,7 +380,7 @@
         document.getElementById('recordForm').addEventListener('submit', saveRecord);
         document.getElementById('cancelEdit').addEventListener('click', resetForm);
         document.getElementById('monthFilter').addEventListener('change', renderUI);
+        document.getElementById('serviceFilter').addEventListener('change', renderUI);
     </script>
 </body>
-
 </html>
