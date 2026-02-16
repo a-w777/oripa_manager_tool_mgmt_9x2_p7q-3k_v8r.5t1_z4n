@@ -17,32 +17,42 @@
         .card { @apply bg-white p-6 rounded-2xl shadow-md border border-slate-200; }
         .input-field { @apply w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-indigo-500 transition; }
         
-        /* --- カレンダーの枠線と配置の修正 --- */
+        /* --- カレンダー枠線と配置の修正：確実に表示するための設定 --- */
         .calendar-grid { 
             display: grid; 
             grid-template-columns: repeat(7, 1fr); 
-            @apply border-l border-t border-slate-300 rounded-lg overflow-hidden;
+            border-top: 1px solid #cbd5e1; /* slate-300相当 */
+            border-left: 1px solid #cbd5e1;
+            @apply rounded-lg overflow-hidden;
         }
         .calendar-header { 
-            /* 曜日を中央に配置 */
+            /* 曜日を確実に中央に配置 */
             display: flex;
             align-items: center;
             justify-content: center;
-            @apply bg-slate-100 p-2 text-center text-[11px] font-black text-slate-500 border-r border-b border-slate-300; 
+            height: 40px;
+            background-color: #f8fafc; /* slate-50 */
+            font-size: 11px;
+            font-weight: 900;
+            color: #64748b; /* slate-500 */
+            border-right: 1px solid #cbd5e1;
+            border-bottom: 1px solid #cbd5e1;
         }
         .calendar-day { 
-            /* 枠線と高さを固定 */
+            /* 枠線をセルごとに定義 */
             height: 100px;
-            @apply bg-white p-1 text-xs transition border-r border-b border-slate-300 flex flex-col gap-0.5 overflow-y-auto;
+            background-color: #ffffff;
+            border-right: 1px solid #cbd5e1;
+            border-bottom: 1px solid #cbd5e1;
+            @apply p-1 text-xs transition flex flex-col gap-0.5 overflow-y-auto;
         }
-        .calendar-day:hover { @apply bg-slate-50; }
+        .calendar-day:hover { background-color: #f1f5f9; }
         .calendar-tag { 
-            /* フォントサイズを小さすぎない程度に調整 */
-            font-size: 9.5px;
+            font-size: 9px;
             line-height: 1.2;
             @apply block w-full px-1.5 py-0.5 rounded font-bold bg-indigo-50 text-indigo-600 border border-indigo-100 truncate mb-0.5; 
         }
-        .calendar-today { @apply bg-indigo-50/50; }
+        .calendar-today { background-color: #f5f3ff; } /* indigo-50相当 */
         .calendar-today .day-num { @apply bg-indigo-600 text-white rounded-full w-5 h-5 flex items-center justify-center; }
         .day-num { @apply text-[10px] mb-1 px-1 font-bold text-slate-400; }
 
@@ -286,7 +296,7 @@
                 serviceSummary[r.service].invest += r.cash;
                 serviceSummary[r.service].gain += (r.added + (r.won || 0));
                 tCash += r.cash;
-                if(r.date.startsWith(m.replace('/','/'))) {
+                if(r.date.includes(m.replace('/','/'))) {
                     mCash += r.cash;
                     if(r.prize) mPrizes++;
                 }
@@ -326,7 +336,7 @@
             const last = new Date(y, m, 0).getDate();
             
             let html = ['日','月','火','水','木','金','土'].map(d => `<div class="calendar-header">${d}</div>`).join('');
-            for(let i=0; i<first; i++) html += `<div class="bg-slate-50/50 border-r border-b border-slate-300"></div>`;
+            for(let i=0; i<first; i++) html += `<div class="calendar-day bg-slate-50/50"></div>`;
             
             for(let d=1; d<=last; d++) {
                 const dayRecs = records.filter(r => {
