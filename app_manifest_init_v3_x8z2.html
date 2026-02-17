@@ -17,35 +17,33 @@
         .card { @apply bg-white p-6 rounded-2xl shadow-md border border-slate-200; }
         .input-field { @apply w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-indigo-500 transition; }
         
-        /* --- カレンダー枠線と配置の修正：確実に表示するための設定 --- */
+        /* --- カレンダー枠線と配置の修正 --- */
         .calendar-grid { 
             display: grid; 
             grid-template-columns: repeat(7, 1fr); 
-            border-top: 1px solid #cbd5e1; /* slate-300相当 */
+            border-top: 1px solid #cbd5e1;
             border-left: 1px solid #cbd5e1;
             @apply rounded-lg overflow-hidden;
         }
         .calendar-header { 
-            /* 曜日を確実に中央に配置 */
             display: flex;
             align-items: center;
             justify-content: center;
             height: 40px;
-            background-color: #f8fafc; /* slate-50 */
+            background-color: #f8fafc;
             font-size: 11px;
             font-weight: 900;
-            color: #64748b; /* slate-500 */
+            color: #64748b;
             border-right: 1px solid #cbd5e1;
             border-bottom: 1px solid #cbd5e1;
         }
         .calendar-day { 
-            /* 枠線をセルごとに定義 */
-            padding:8px;
+            padding: 3px;
             height: 70px;
             background-color: #ffffff;
             border-right: 1px solid #cbd5e1;
             border-bottom: 1px solid #cbd5e1;
-            @apply p-1 text-s transition flex flex-col gap-0.5 overflow-y-auto;
+            @apply text-[11px] transition flex flex-col gap-0.5 overflow-y-auto;
         }
         .calendar-day:hover { background-color: #f1f5f9; }
         .calendar-tag { 
@@ -53,11 +51,10 @@
             line-height: 1.2;
             @apply block w-full px-1.5 py-0.5 rounded font-bold bg-indigo-50 text-indigo-600 border border-indigo-100 truncate mb-0.5; 
         }
-        .calendar-today { background-color: #f5f3ff; } /* indigo-50相当 */
+        .calendar-today { background-color: #f5f3ff; }
         .calendar-today .day-num { @apply bg-indigo-600 text-white rounded-full w-5 h-5 flex items-center justify-center; }
         .day-num { @apply text-[10px] mb-1 px-1 font-bold text-slate-400; }
 
-        /* スクロールバー設定 */
         .calendar-day::-webkit-scrollbar { width: 2px; }
         .calendar-day::-webkit-scrollbar-thumb { @apply bg-slate-200 rounded; }
     </style>
@@ -154,7 +151,6 @@
                 </div>
             </div>
 
-            <!-- History Table -->
             <div class="lg:col-span-2 card !p-0 overflow-hidden">
                 <div class="p-4 border-b bg-slate-50 flex flex-wrap gap-3 justify-between items-center">
                     <div class="flex gap-2 items-center">
@@ -181,9 +177,7 @@
             </div>
         </div>
 
-        <!-- PC表示時も縦並びにするためflex-colを指定 -->
         <div class="flex flex-col gap-8 pb-12">
-            <!-- Calendar Section -->
             <div class="card">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-xl font-bold flex items-center gap-2">📅 利用カレンダー</h2>
@@ -192,7 +186,6 @@
                 <div id="calendar_container" class="calendar-grid"></div>
             </div>
 
-            <!-- Chart Section -->
             <div class="card">
                 <h2 class="text-xl font-bold mb-6 flex items-center gap-2">📊 サービス別分析</h2>
                 <div class="h-[400px] w-full relative">
@@ -226,17 +219,47 @@
         let records = [];
         let unsubscribeSync = null;
         let analysisChart = null;
+        let logoutTimer = null;
+        let timeLeft = 1800; // 30分
+
+        // ログアウトタイマー開始
+        function startLogoutTimer() {
+            if (logoutTimer) clearInterval(logoutTimer);
+            timeLeft = 1800;
+            updateTimerDisplay();
+            logoutTimer = setInterval(() => {
+                timeLeft--;
+                updateTimerDisplay();
+                if (timeLeft <= 0) {
+                    clearInterval(logoutTimer);
+                    signOut(auth);
+                }
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            const m = Math.floor(timeLeft / 60);
+            const s = timeLeft % 60;
+            document.getElementById('auto_logout_timer').innerText = `自動切断まで ${m}:${s.toString().padStart(2, '0')}`;
+        }
 
         onAuthStateChanged(auth, (u) => {
             if (u) {
                 user = u;
                 document.getElementById('user_photo').src = u.photoURL;
                 document.getElementById('user_photo').classList.remove('hidden');
+                startLogoutTimer();
                 startSync();
             } else {
                 if (unsubscribeSync) unsubscribeSync();
+                if (logoutTimer) clearInterval(logoutTimer);
+                user = null;
+                records = [];
+                document.getElementById('auth_overlay').style.display = 'flex';
+                document.getElementById('auth_overlay').classList.remove('opacity-0');
                 document.getElementById('loader_icon').classList.add('hidden');
                 document.getElementById('login_ui').classList.remove('hidden');
+                document.getElementById('app_content').classList.add('opacity-0');
             }
         });
 
@@ -251,14 +274,14 @@
                 
                 const balances = {};
                 records = raw.map(r => {
-                    balances[r.service] = (balances[r.service] || 0) + (r.added + (r.won || 0) - (r.spent || 0));
+                    balances[r.service] = (balances[r.service] || 0) + (Number(r.added || 0) + Number(r.won || 0) - Number(r.spent || 0));
                     return { ...r, runningBalance: balances[r.service] };
                 }).reverse();
 
                 setupFilters();
                 renderUI();
                 document.getElementById('auth_overlay').classList.add('opacity-0');
-                setTimeout(() => document.getElementById('auth_overlay').style.display = 'none', 500);
+                setTimeout(() => { if(user) document.getElementById('auth_overlay').style.display = 'none'; }, 500);
                 document.getElementById('app_content').classList.remove('opacity-0');
             });
         }
@@ -294,11 +317,11 @@
             records.forEach(r => {
                 if (!currentBalances[r.service]) currentBalances[r.service] = r.runningBalance;
                 if (!serviceSummary[r.service]) serviceSummary[r.service] = { invest: 0, gain: 0, bal: r.runningBalance };
-                serviceSummary[r.service].invest += r.cash;
-                serviceSummary[r.service].gain += (r.added + (r.won || 0));
-                tCash += r.cash;
+                serviceSummary[r.service].invest += Number(r.cash || 0);
+                serviceSummary[r.service].gain += (Number(r.added || 0) + Number(r.won || 0));
+                tCash += Number(r.cash || 0);
                 if(r.date.includes(m.replace('/','/'))) {
-                    mCash += r.cash;
+                    mCash += Number(r.cash || 0);
                     if(r.prize) mPrizes++;
                 }
             });
@@ -312,9 +335,9 @@
             document.getElementById('historyBody').innerHTML = filtered.map(r => `
                 <tr class="hover:bg-slate-50 border-b border-slate-100">
                     <td class="p-4"><div class="text-[10px] text-slate-400 font-mono">${r.date}</div><div class="font-bold text-slate-700">${r.service}</div></td>
-                    <td class="p-4 text-center text-rose-500 font-bold">¥${r.cash.toLocaleString()}</td>
-                    <td class="p-4 text-center text-orange-500">-${r.spent.toLocaleString()}</td>
-                    <td class="p-4 text-center text-indigo-600 font-black">${r.runningBalance.toLocaleString()}</td>
+                    <td class="p-4 text-center text-rose-500 font-bold">¥${Number(r.cash || 0).toLocaleString()}</td>
+                    <td class="p-4 text-center text-orange-500">-${Number(r.spent || 0).toLocaleString()}</td>
+                    <td class="p-4 text-center text-indigo-600 font-black">${Number(r.runningBalance || 0).toLocaleString()}</td>
                     <td class="p-4 text-right"><button onclick="window.editRecord('${r.id}')" class="text-indigo-600 text-xs font-bold">修正</button></td>
                 </tr>
             `).join('');
@@ -322,7 +345,7 @@
             document.getElementById('service_balances').innerHTML = Object.entries(currentBalances).map(([name, bal]) => `
                 <div class="flex justify-between bg-slate-50 p-3 rounded-xl border border-slate-100 mb-2">
                     <span class="font-bold text-slate-600">${name}</span>
-                    <span class="text-indigo-600 font-black">${bal.toLocaleString()} pt</span>
+                    <span class="text-indigo-600 font-black">${Number(bal || 0).toLocaleString()} pt</span>
                 </div>
             `).join('');
 
@@ -408,12 +431,19 @@
             document.getElementById('editing_id').value = "";
             document.getElementById('submitBtn').innerText = "データを保存";
             document.getElementById('cancelEdit').classList.add('hidden');
+            // 操作があったのでタイマーリセット
+            startLogoutTimer();
         });
 
         document.getElementById('monthFilter').addEventListener('change', renderUI);
         document.getElementById('serviceFilter').addEventListener('change', renderUI);
+        
+        // 入力操作などがあったらタイマーをリセット
+        ['mousedown', 'keydown', 'touchstart'].forEach(type => {
+            document.addEventListener(type, () => {
+                if (user) startLogoutTimer();
+            });
+        });
     </script>
 </body>
 </html>
-
-
