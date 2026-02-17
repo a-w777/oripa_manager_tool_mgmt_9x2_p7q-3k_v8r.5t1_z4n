@@ -17,7 +17,6 @@
         .card { @apply bg-white p-6 rounded-2xl shadow-md border border-slate-200; }
         .input-field { @apply w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-indigo-500 transition; }
         
-        /* --- カレンダー枠線と配置の修正 --- */
         .calendar-grid { 
             display: grid; 
             grid-template-columns: repeat(7, 1fr); 
@@ -86,7 +85,6 @@
 
     <main id="app_content" class="max-w-6xl mx-auto p-4 md:p-6 space-y-8 opacity-0 transition-opacity duration-500">
         
-        <!-- Summary Dashboard -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div class="lg:col-span-1 card">
                 <h2 class="text-xs font-bold text-slate-400 uppercase mb-4 tracking-widest">💳 現在の最新残高</h2>
@@ -222,7 +220,6 @@
         let logoutTimer = null;
         let timeLeft = 1800; // 30分
 
-        // ログアウトタイマー開始
         function startLogoutTimer() {
             if (logoutTimer) clearInterval(logoutTimer);
             timeLeft = 1800;
@@ -240,7 +237,8 @@
         function updateTimerDisplay() {
             const m = Math.floor(timeLeft / 60);
             const s = timeLeft % 60;
-            document.getElementById('auto_logout_timer').innerText = `自動切断まで ${m}:${s.toString().padStart(2, '0')}`;
+            const timerEl = document.getElementById('auto_logout_timer');
+            if(timerEl) timerEl.innerText = `自動切断まで ${m}:${s.toString().padStart(2, '0')}`;
         }
 
         onAuthStateChanged(auth, (u) => {
@@ -332,15 +330,22 @@
             document.getElementById('label_month').innerText = `${m.split('/')[1] || ''}月の支払額`;
 
             const filtered = records.filter(r => r.date.includes(m.replace('/','/')) && (s === 'all' || r.service === s));
-            document.getElementById('historyBody').innerHTML = filtered.map(r => `
+            document.getElementById('historyBody').innerHTML = filtered.map(r => {
+                const add = (Number(r.added || 0) + Number(r.won || 0));
+                const addText = add > 0 ? `<div class="text-[10px] text-slate-400 font-bold mt-0.5">+${add.toLocaleString()}</div>` : '';
+                
+                return `
                 <tr class="hover:bg-slate-50 border-b border-slate-100">
                     <td class="p-4"><div class="text-[10px] text-slate-400 font-mono">${r.date}</div><div class="font-bold text-slate-700">${r.service}</div></td>
                     <td class="p-4 text-center text-rose-500 font-bold">¥${Number(r.cash || 0).toLocaleString()}</td>
                     <td class="p-4 text-center text-orange-500">-${Number(r.spent || 0).toLocaleString()}</td>
-                    <td class="p-4 text-center text-indigo-600 font-black">${Number(r.runningBalance || 0).toLocaleString()}</td>
+                    <td class="p-4 text-center">
+                        <div class="text-indigo-600 font-black">${Number(r.runningBalance || 0).toLocaleString()}</div>
+                        ${addText}
+                    </td>
                     <td class="p-4 text-right"><button onclick="window.editRecord('${r.id}')" class="text-indigo-600 text-xs font-bold">修正</button></td>
                 </tr>
-            `).join('');
+            `}).join('');
 
             document.getElementById('service_balances').innerHTML = Object.entries(currentBalances).map(([name, bal]) => `
                 <div class="flex justify-between bg-slate-50 p-3 rounded-xl border border-slate-100 mb-2">
@@ -368,13 +373,13 @@
                     return Number(p[0]) === y && Number(p[1]) === m && Number(p[2]) === d;
                 });
                 const isToday = new Date().toLocaleDateString('ja-JP') === new Date(y, m-1, d).toLocaleDateString('ja-JP');
-                const services = [...new Set(dayRecs.map(r => r.service))];
+                const dayServices = [...new Set(dayRecs.map(r => r.service))];
 
                 html += `
                     <div class="calendar-day ${isToday ? 'calendar-today' : ''}">
                         <div class="day-num">${d}</div>
                         <div class="flex flex-col">
-                            ${services.map(s => `<span class="calendar-tag">${s}</span>`).join('')}
+                            ${dayServices.map(s => `<span class="calendar-tag">${s}</span>`).join('')}
                         </div>
                     </div>
                 `;
@@ -431,14 +436,19 @@
             document.getElementById('editing_id').value = "";
             document.getElementById('submitBtn').innerText = "データを保存";
             document.getElementById('cancelEdit').classList.add('hidden');
-            // 操作があったのでタイマーリセット
             startLogoutTimer();
+        });
+
+        document.getElementById('cancelEdit').addEventListener('click', () => {
+            document.getElementById('recordForm').reset();
+            document.getElementById('editing_id').value = "";
+            document.getElementById('submitBtn').innerText = "データを保存";
+            document.getElementById('cancelEdit').classList.add('hidden');
         });
 
         document.getElementById('monthFilter').addEventListener('change', renderUI);
         document.getElementById('serviceFilter').addEventListener('change', renderUI);
         
-        // 入力操作などがあったらタイマーをリセット
         ['mousedown', 'keydown', 'touchstart'].forEach(type => {
             document.addEventListener(type, () => {
                 if (user) startLogoutTimer();
