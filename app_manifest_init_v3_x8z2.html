@@ -295,11 +295,13 @@
             
             const mf = document.getElementById('monthFilter');
             const sf = document.getElementById('serviceFilter');
+            const dl = document.getElementById('service_suggestions');
             const mVal = mf.value;
             const sVal = sf.value;
 
             mf.innerHTML = Array.from(months).sort().reverse().map(m => `<option value="${m}">${m.split('/')[0]}年 ${m.split('/')[1]}月</option>`).join('') || `<option value="${new Date().getFullYear()}/${new Date().getMonth()+1}">今月</option>`;
             sf.innerHTML = '<option value="all">全サービス表示</option>' + Array.from(services).sort().map(s => `<option value="${s}">${s}</option>`).join('');
+            dl.innerHTML = Array.from(services).sort().map(s => `<option value="${s}"></option>`).join('');
 
             mf.value = mVal || mf.firstChild?.value || "";
             sf.value = sVal || "all";
@@ -332,7 +334,7 @@
             const filtered = records.filter(r => r.date.includes(m.replace('/','/')) && (s === 'all' || r.service === s));
             document.getElementById('historyBody').innerHTML = filtered.map(r => {
                 const add = (Number(r.added || 0) + Number(r.won || 0));
-                const addText = add > 0 ? `<div class="text-[10px] text-slate-400 font-bold mt-0.5">+${add.toLocaleString()}</div>` : '';
+                const addText = add > 0 ? `<div class="text-[10px] text-slate-400 font-bold mb-0.5">+${add.toLocaleString()}</div>` : '';
                 
                 return `
                 <tr class="hover:bg-slate-50 border-b border-slate-100">
@@ -340,8 +342,10 @@
                     <td class="p-4 text-center text-rose-500 font-bold">¥${Number(r.cash || 0).toLocaleString()}</td>
                     <td class="p-4 text-center text-orange-500">-${Number(r.spent || 0).toLocaleString()}</td>
                     <td class="p-4 text-center">
-                        <div class="text-indigo-600 font-black">${Number(r.runningBalance || 0).toLocaleString()}</div>
-                        ${addText}
+                        <div class="flex flex-col items-center">
+                            ${addText}
+                            <div class="text-indigo-600 font-black">${Number(r.runningBalance || 0).toLocaleString()}</div>
+                        </div>
                     </td>
                     <td class="p-4 text-right"><button onclick="window.editRecord('${r.id}')" class="text-indigo-600 text-xs font-bold">修正</button></td>
                 </tr>
@@ -373,13 +377,15 @@
                     return Number(p[0]) === y && Number(p[1]) === m && Number(p[2]) === d;
                 });
                 const isToday = new Date().toLocaleDateString('ja-JP') === new Date(y, m-1, d).toLocaleDateString('ja-JP');
-                const dayServices = [...new Set(dayRecs.map(r => r.service))];
+                
+                // 消費ポイント(spent)が0より大きいサービスのみを抽出
+                const spentServices = [...new Set(dayRecs.filter(r => Number(r.spent || 0) > 0).map(r => r.service))];
 
                 html += `
                     <div class="calendar-day ${isToday ? 'calendar-today' : ''}">
                         <div class="day-num">${d}</div>
                         <div class="flex flex-col">
-                            ${dayServices.map(s => `<span class="calendar-tag">${s}</span>`).join('')}
+                            ${spentServices.map(s => `<span class="calendar-tag">${s}</span>`).join('')}
                         </div>
                     </div>
                 `;
