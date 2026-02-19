@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap');
         body { font-family: 'Noto Sans JP', sans-serif; }
         .loading-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -56,14 +56,6 @@
 
         .calendar-day::-webkit-scrollbar { width: 2px; }
         .calendar-day::-webkit-scrollbar-thumb { @apply bg-slate-200 rounded; }
-
-        /* ステータスカードの修正 */
-        .stat-card-container { @apply flex flex-wrap -mx-2; }
-        .stat-card-wrapper { @apply w-full md:w-1/3 px-2 mb-4 md:mb-0; }
-        .stat-card { @apply h-full flex flex-col justify-center p-6 rounded-2xl shadow-md border border-slate-200 bg-white relative overflow-hidden; }
-        .stat-card-label { @apply text-xs font-bold text-slate-400 mb-2 flex items-center gap-1.5; }
-        .stat-card-value { @apply text-2xl font-black tracking-tight; }
-        .stat-icon { @apply absolute -right-3 -bottom-3 text-5xl opacity-[0.05] pointer-events-none rotate-12; }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-800">
@@ -80,12 +72,12 @@
         <p id="status_text" class="text-sm font-bold text-slate-600">接続中...</p>
     </div>
 
-    <nav class="bg-indigo-700 text-white p-3 shadow-lg sticky top-0 z-50">
+    <nav class="bg-indigo-700 text-white p-4 shadow-lg sticky top-0 z-50">
         <div class="max-w-6xl mx-auto flex justify-between items-center">
-            <h1 class="text-lg font-black flex items-center gap-2"><span>💎</span> オリパ管理 Pro</h1>
+            <h1 class="text-xl font-bold flex items-center gap-2"><span>💎</span> オリパ管理 Pro</h1>
             <div class="flex items-center gap-3">
-                <span id="auto_logout_timer" class="hidden md:inline text-[10px] text-indigo-200 font-bold"></span>
-                <button id="logoutBtn" class="text-[10px] bg-indigo-800 hover:bg-indigo-900 px-3 py-1.5 rounded-full border border-indigo-500 transition font-bold">ログアウト</button>
+                <span id="auto_logout_timer" class="text-[10px] bg-indigo-600 px-2 py-1 rounded opacity-70">自動切断まで 30:00</span>
+                <button id="logoutBtn" class="text-[10px] bg-indigo-800 hover:bg-indigo-900 px-2 py-1 rounded border border-indigo-600">ログアウト</button>
                 <img id="user_photo" class="h-8 w-8 rounded-full border-2 border-white hidden">
             </div>
         </div>
@@ -93,34 +85,26 @@
 
     <main id="app_content" class="max-w-6xl mx-auto p-4 md:p-6 space-y-6 opacity-0 transition-opacity duration-500">
         
-        <!-- 主要ステータス表示エリア (1/3幅・白背景カード) -->
-        <div class="stat-card-container">
-            <div class="stat-card-wrapper">
-                <div class="stat-card">
-                    <span class="stat-card-label">📅 <span id="label_month">今月の支払額</span></span>
-                    <span class="stat-card-value text-indigo-600" id="stat_monthly_cash">¥0</span>
-                    <span class="stat-icon">💰</span>
-                </div>
+        <!-- 統計カード: 3つで幅いっぱい -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-emerald-500">
+                <p class="text-xs text-slate-500 font-bold mb-1" id="label_month">今月の支払額</p>
+                <h3 class="text-2xl font-black text-slate-700" id="stat_monthly_cash">¥0</h3>
             </div>
-            <div class="stat-card-wrapper">
-                <div class="stat-card">
-                    <span class="stat-card-label">🏆 今月の高額当選</span>
-                    <span class="stat-card-value text-amber-500" id="stat_monthly_prizes">0</span>
-                    <span class="stat-icon">✨</span>
-                </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-amber-500">
+                <p class="text-xs text-slate-500 font-bold mb-1">今月の高額当選</p>
+                <h3 class="text-2xl font-black text-slate-700" id="stat_monthly_prizes">0</h3>
             </div>
-            <div class="stat-card-wrapper">
-                <div class="stat-card">
-                    <span class="stat-card-label">🌍 生涯総投資額</span>
-                    <span class="stat-card-value text-slate-800" id="stat_total_cash">¥0</span>
-                    <span class="stat-icon">💎</span>
-                </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-indigo-500">
+                <p class="text-xs text-slate-500 font-bold mb-1">生涯総投資額</p>
+                <h3 class="text-2xl font-black text-slate-700" id="stat_total_cash">¥0</h3>
             </div>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- 入力フォーム -->
+            <!-- 左カラム: 記録フォーム ＋ 残高一覧 -->
             <div class="lg:col-span-1 space-y-6">
+                <!-- 📥 今日の記録 -->
                 <div class="card">
                     <h2 class="text-lg font-bold mb-4 flex justify-between">
                         <span id="form_title">📥 今日の記録</span>
@@ -161,22 +145,19 @@
                     </form>
                 </div>
 
-                <!-- 最新残高 (縦線なし) -->
+                <!-- 💳 現在の最新残高 (フォームの下に配置) -->
                 <div class="card">
-                    <h2 class="text-xs font-bold text-slate-400 uppercase mb-4 tracking-widest flex items-center gap-2">
-                        💳 現在の最新残高
-                    </h2>
-                    <div id="service_balances" class="space-y-2 max-h-[400px] overflow-y-auto text-sm"></div>
+                    <h2 class="text-xs font-bold text-slate-400 uppercase mb-4 tracking-widest">💳 現在の最新残高</h2>
+                    <div id="service_balances" class="space-y-2 max-h-[300px] overflow-y-auto text-sm"></div>
                 </div>
             </div>
 
-            <!-- 履歴テーブル -->
-            <div class="lg:col-span-2 card !p-0 overflow-hidden flex flex-col">
+            <!-- 右カラム: 履歴一覧 -->
+            <div class="lg:col-span-2 card !p-0 overflow-hidden self-start">
                 <div class="p-4 border-b bg-slate-50 flex flex-wrap gap-3 justify-between items-center">
-                    <h3 class="font-bold text-slate-700">利用履歴</h3>
                     <div class="flex gap-2 items-center">
-                        <select id="monthFilter" class="p-1.5 border rounded-lg text-xs bg-white outline-none font-bold shadow-sm"></select>
-                        <select id="serviceFilter" class="p-1.5 border rounded-lg text-xs bg-white outline-none font-bold shadow-sm">
+                        <select id="monthFilter" class="p-1.5 border rounded-lg text-sm bg-white outline-none font-bold shadow-sm"></select>
+                        <select id="serviceFilter" class="p-1.5 border rounded-lg text-sm bg-white outline-none font-bold shadow-sm">
                             <option value="all">全サービス表示</option>
                         </select>
                     </div>
@@ -188,7 +169,7 @@
                                 <th class="p-4">日付 / サービス</th>
                                 <th class="p-4 text-center">支払額</th>
                                 <th class="p-4 text-center">消費pt</th>
-                                <th class="p-4 text-center">残高</th>
+                                <th class="p-4 text-center">残高ポイント</th>
                                 <th class="p-4 text-right">操作</th>
                             </tr>
                         </thead>
@@ -198,17 +179,17 @@
             </div>
         </div>
 
-        <div class="flex flex-col gap-6 pb-12">
+        <div class="flex flex-col gap-8 pb-12">
             <div class="card">
                 <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-lg font-bold flex items-center gap-2">📅 利用カレンダー</h2>
-                    <div id="calendar_label" class="text-xs font-bold text-indigo-600 bg-indigo-50 px-4 py-1.5 rounded-full"></div>
+                    <h2 class="text-xl font-bold flex items-center gap-2">📅 利用カレンダー</h2>
+                    <div id="calendar_label" class="text-sm font-bold text-indigo-600 bg-indigo-50 px-4 py-1.5 rounded-full"></div>
                 </div>
                 <div id="calendar_container" class="calendar-grid"></div>
             </div>
 
             <div class="card">
-                <h2 class="text-lg font-bold mb-6 flex items-center gap-2">📊 サービス別分析</h2>
+                <h2 class="text-xl font-bold mb-6 flex items-center gap-2">📊 サービス別分析</h2>
                 <div id="chart_wrapper" class="w-full relative min-h-[400px]">
                     <canvas id="analysisChart"></canvas>
                 </div>
@@ -241,7 +222,7 @@
         let unsubscribeSync = null;
         let analysisChart = null;
         let logoutTimer = null;
-        let timeLeft = 1800;
+        let timeLeft = 1800; // 30分
 
         function startLogoutTimer() {
             if (logoutTimer) clearInterval(logoutTimer);
@@ -322,7 +303,7 @@
             const mVal = mf.value;
             const sVal = sf.value;
 
-            mf.innerHTML = Array.from(months).sort().reverse().map(m => `<option value="${m}">${m.split('/')[1]}月</option>`).join('') || `<option value="${new Date().getFullYear()}/${new Date().getMonth()+1}">今月</option>`;
+            mf.innerHTML = Array.from(months).sort().reverse().map(m => `<option value="${m}">${m.split('/')[0]}年 ${m.split('/')[1]}月</option>`).join('') || `<option value="${new Date().getFullYear()}/${new Date().getMonth()+1}">今月</option>`;
             sf.innerHTML = '<option value="all">全サービス表示</option>' + Array.from(services).sort().map(s => `<option value="${s}">${s}</option>`).join('');
             dl.innerHTML = Array.from(services).sort().map(s => `<option value="${s}"></option>`).join('');
 
@@ -345,7 +326,7 @@
                 serviceSummary[r.service].totalEarnedPts += (Number(r.added || 0) + Number(r.won || 0));
                 
                 tCash += Number(r.cash || 0);
-                if(r.date.includes(m.replace('/','/'))) {
+                if(r.date.includes(m)) {
                     mCash += Number(r.cash || 0);
                     if(r.prize) mPrizes++;
                 }
@@ -356,7 +337,7 @@
             document.getElementById('stat_total_cash').innerText = `¥${tCash.toLocaleString()}`;
             document.getElementById('label_month').innerText = `${m.split('/')[1] || ''}月の支払額`;
 
-            const filtered = records.filter(r => r.date.includes(m.replace('/','/')) && (s === 'all' || r.service === s));
+            const filtered = records.filter(r => r.date.includes(m) && (s === 'all' || r.service === s));
             document.getElementById('historyBody').innerHTML = filtered.map(r => {
                 const add = (Number(r.added || 0) + Number(r.won || 0));
                 const addText = add > 0 ? `<div class="text-[10px] text-slate-400 font-bold mb-0.5">+${add.toLocaleString()}</div>` : '';
@@ -372,13 +353,13 @@
                             <div class="text-indigo-600 font-black">${Number(r.runningBalance || 0).toLocaleString()}</div>
                         </div>
                     </td>
-                    <td class="p-4 text-right"><button onclick="window.editRecord('${r.id}')" class="text-indigo-600 text-xs font-bold bg-indigo-50 px-2 py-1 rounded">修正</button></td>
+                    <td class="p-4 text-right"><button onclick="window.editRecord('${r.id}')" class="text-indigo-600 text-xs font-bold">修正</button></td>
                 </tr>
             `}).join('');
 
             document.getElementById('service_balances').innerHTML = Object.entries(currentBalances).map(([name, bal]) => `
-                <div class="flex justify-between bg-slate-50 p-3 rounded-xl border border-slate-100">
-                    <span class="font-bold text-slate-600 text-xs">${name}</span>
+                <div class="flex justify-between bg-slate-50 p-3 rounded-xl border border-slate-100 mb-2">
+                    <span class="font-bold text-slate-600">${name}</span>
                     <span class="text-indigo-600 font-black">${Number(bal || 0).toLocaleString()} pt</span>
                 </div>
             `).join('');
@@ -435,7 +416,7 @@
                             borderRadius: 6
                         },
                         { 
-                            label: '獲得総ポイント', 
+                            label: '獲得総ポイント (チャージ+当選)', 
                             data: labels.map(l => summary[l].totalEarnedPts), 
                             backgroundColor: '#818cf8',
                             borderRadius: 6
@@ -443,15 +424,23 @@
                     ]
                 },
                 options: { 
-                    indexAxis: 'y',
+                    indexAxis: 'y', 
                     responsive: true, 
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: { position: 'top', labels: { font: { weight: 'bold' } } }
+                        legend: { position: 'top', labels: { font: { weight: 'bold' } } },
+                        tooltip: { padding: 12 }
                     },
                     scales: {
-                        x: { beginAtZero: true, grid: { display: false } },
-                        y: { grid: { color: '#f1f5f9' }, ticks: { font: { weight: 'bold' } } }
+                        x: {
+                            beginAtZero: true,
+                            grid: { display: false },
+                            ticks: { font: { size: 10 } }
+                        },
+                        y: {
+                            grid: { color: '#f1f5f9' },
+                            ticks: { font: { weight: 'bold', size: 12 } }
+                        }
                     }
                 }
             });
