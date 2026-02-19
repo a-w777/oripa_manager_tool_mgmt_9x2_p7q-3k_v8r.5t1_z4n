@@ -57,11 +57,13 @@
         .calendar-day::-webkit-scrollbar { width: 2px; }
         .calendar-day::-webkit-scrollbar-thumb { @apply bg-slate-200 rounded; }
 
-        /* ステータスカード専用 */
-        .stat-card { @apply flex flex-col justify-center p-5 rounded-2xl shadow-sm border border-slate-200 bg-white relative overflow-hidden; }
-        .stat-card-label { @apply text-xs font-bold text-slate-400 mb-1 flex items-center gap-1.5; }
-        .stat-card-value { @apply text-2xl font-black text-slate-800 tracking-tight; }
-        .stat-icon { @apply absolute -right-4 -bottom-4 text-6xl opacity-[0.05] pointer-events-none rotate-12; }
+        /* ステータスカードの修正 */
+        .stat-card-container { @apply flex flex-wrap -mx-2; }
+        .stat-card-wrapper { @apply w-full md:w-1/3 px-2 mb-4 md:mb-0; }
+        .stat-card { @apply h-full flex flex-col justify-center p-6 rounded-2xl shadow-md border border-slate-200 bg-white relative overflow-hidden; }
+        .stat-card-label { @apply text-xs font-bold text-slate-400 mb-2 flex items-center gap-1.5; }
+        .stat-card-value { @apply text-2xl font-black tracking-tight; }
+        .stat-icon { @apply absolute -right-3 -bottom-3 text-5xl opacity-[0.05] pointer-events-none rotate-12; }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-800">
@@ -91,22 +93,28 @@
 
     <main id="app_content" class="max-w-6xl mx-auto p-4 md:p-6 space-y-6 opacity-0 transition-opacity duration-500">
         
-        <!-- 主要ステータス表示エリア -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="stat-card border-l-4 border-indigo-500">
-                <span class="stat-card-label">📅 <span id="label_month">今月の支払額</span></span>
-                <span class="stat-card-value text-indigo-600" id="stat_monthly_cash">¥0</span>
-                <span class="stat-icon">💰</span>
+        <!-- 主要ステータス表示エリア (1/3幅・白背景カード) -->
+        <div class="stat-card-container">
+            <div class="stat-card-wrapper">
+                <div class="stat-card">
+                    <span class="stat-card-label">📅 <span id="label_month">今月の支払額</span></span>
+                    <span class="stat-card-value text-indigo-600" id="stat_monthly_cash">¥0</span>
+                    <span class="stat-icon">💰</span>
+                </div>
             </div>
-            <div class="stat-card border-l-4 border-amber-400">
-                <span class="stat-card-label">🏆 今月の高額当選</span>
-                <span class="stat-card-value text-amber-500" id="stat_monthly_prizes">0</span>
-                <span class="stat-icon">✨</span>
+            <div class="stat-card-wrapper">
+                <div class="stat-card">
+                    <span class="stat-card-label">🏆 今月の高額当選</span>
+                    <span class="stat-card-value text-amber-500" id="stat_monthly_prizes">0</span>
+                    <span class="stat-icon">✨</span>
+                </div>
             </div>
-            <div class="stat-card border-l-4 border-slate-800">
-                <span class="stat-card-label">🌍 生涯総投資額</span>
-                <span class="stat-card-value text-slate-800" id="stat_total_cash">¥0</span>
-                <span class="stat-icon">💎</span>
+            <div class="stat-card-wrapper">
+                <div class="stat-card">
+                    <span class="stat-card-label">🌍 生涯総投資額</span>
+                    <span class="stat-card-value text-slate-800" id="stat_total_cash">¥0</span>
+                    <span class="stat-icon">💎</span>
+                </div>
             </div>
         </div>
 
@@ -153,8 +161,8 @@
                     </form>
                 </div>
 
-                <!-- 最新残高 -->
-                <div class="card border-l-4 border-indigo-500">
+                <!-- 最新残高 (縦線なし) -->
+                <div class="card">
                     <h2 class="text-xs font-bold text-slate-400 uppercase mb-4 tracking-widest flex items-center gap-2">
                         💳 現在の最新残高
                     </h2>
@@ -343,7 +351,6 @@
                 }
             });
 
-            // 主要ステータスカードの更新
             document.getElementById('stat_monthly_cash').innerText = `¥${mCash.toLocaleString()}`;
             document.getElementById('stat_monthly_prizes').innerText = mPrizes;
             document.getElementById('stat_total_cash').innerText = `¥${tCash.toLocaleString()}`;
