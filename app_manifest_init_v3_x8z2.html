@@ -186,7 +186,7 @@
 
             <div class="card">
                 <h2 class="text-xl font-bold mb-6 flex items-center gap-2">📊 サービス別分析</h2>
-                <div class="h-[400px] w-full relative">
+                <div id="chart_wrapper" class="w-full relative min-h-[400px]">
                     <canvas id="analysisChart"></canvas>
                 </div>
             </div>
@@ -316,9 +316,12 @@
 
             records.forEach(r => {
                 if (!currentBalances[r.service]) currentBalances[r.service] = r.runningBalance;
-                if (!serviceSummary[r.service]) serviceSummary[r.service] = { invest: 0, gain: 0, bal: r.runningBalance };
+                if (!serviceSummary[r.service]) serviceSummary[r.service] = { invest: 0, totalEarnedPts: 0 };
+                
                 serviceSummary[r.service].invest += Number(r.cash || 0);
-                serviceSummary[r.service].gain += (Number(r.added || 0) + Number(r.won || 0));
+                // 消費ポイントは含めず、チャージと当選ポイントの合計を算出
+                serviceSummary[r.service].totalEarnedPts += (Number(r.added || 0) + Number(r.won || 0));
+                
                 tCash += Number(r.cash || 0);
                 if(r.date.includes(m.replace('/','/'))) {
                     mCash += Number(r.cash || 0);
@@ -377,8 +380,6 @@
                     return Number(p[0]) === y && Number(p[1]) === m && Number(p[2]) === d;
                 });
                 const isToday = new Date().toLocaleDateString('ja-JP') === new Date(y, m-1, d).toLocaleDateString('ja-JP');
-                
-                // 消費ポイント(spent)が0より大きいサービスのみを抽出
                 const spentServices = [...new Set(dayRecs.filter(r => Number(r.spent || 0) > 0).map(r => r.service))];
 
                 html += `
@@ -396,17 +397,51 @@
         function renderChart(summary) {
             const ctx = document.getElementById('analysisChart').getContext('2d');
             const labels = Object.keys(summary);
+            
+            // サービス数に応じて高さを動的に調整
+            const chartHeight = Math.max(400, labels.length * 60);
+            document.getElementById('chart_wrapper').style.height = `${chartHeight}px`;
+
             if (analysisChart) analysisChart.destroy();
             analysisChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: labels,
                     datasets: [
-                        { label: '総投資(円)', data: labels.map(l => summary[l].invest), backgroundColor: '#fb7185' },
-                        { label: '現在の残高', data: labels.map(l => summary[l].bal), backgroundColor: '#818cf8' }
+                        { 
+                            label: '総投資額 (円)', 
+                            data: labels.map(l => summary[l].invest), 
+                            backgroundColor: '#fb7185',
+                            borderRadius: 6
+                        },
+                        { 
+                            label: '獲得総ポイント (チャージ+当選)', 
+                            data: labels.map(l => summary[l].totalEarnedPts), 
+                            backgroundColor: '#818cf8',
+                            borderRadius: 6
+                        }
                     ]
                 },
-                options: { responsive: true, maintainAspectRatio: false }
+                options: { 
+                    indexAxis: 'y', // 横向きグラフに変更
+                    responsive: true, 
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top', labels: { font: { weight: 'bold' } } },
+                        tooltip: { padding: 12 }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            grid: { display: false },
+                            ticks: { font: { size: 10 } }
+                        },
+                        y: {
+                            grid: { color: '#f1f5f9' },
+                            ticks: { font: { weight: 'bold', size: 12 } }
+                        }
+                    }
+                }
             });
         }
 
