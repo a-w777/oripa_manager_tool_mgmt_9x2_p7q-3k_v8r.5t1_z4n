@@ -78,7 +78,7 @@
     <div id="breakdown_modal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
         <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden transform transition-all">
             <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-indigo-50">
-                <h3 id="modal_title" class="text-lg font-black text-indigo-900">10月の課金内訳</h3>
+                <h3 id="modal_title" class="text-lg font-black text-indigo-900">課金内訳</h3>
                 <button id="close_modal" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
             </div>
             <div id="modal_content" class="p-6 max-h-[60vh] overflow-y-auto space-y-3">
@@ -105,16 +105,16 @@
         
         <!-- 統計カード -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-            <!-- 課金額タップで内訳表示 -->
+            <!-- 課金額タップで内訳表示（下のフィルタと連動） -->
             <div id="trigger_breakdown" class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-emerald-500 cursor-pointer hover:bg-emerald-50 transition active:scale-95 group">
                 <p class="text-xs text-slate-500 font-bold mb-1 flex items-center justify-center gap-1">
-                    <span id="label_month">今月の支払額</span>
+                    <span id="label_month">支払額</span>
                     <svg class="w-3 h-3 text-emerald-400 group-hover:translate-y-0.5 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path></svg>
                 </p>
                 <h3 class="text-2xl font-black text-slate-700" id="stat_monthly_cash">¥0</h3>
             </div>
             <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-amber-500">
-                <p class="text-xs text-slate-500 font-bold mb-1">今月の高額当選</p>
+                <p class="text-xs text-slate-500 font-bold mb-1">選択月の高額当選</p>
                 <h3 class="text-2xl font-black text-slate-700" id="stat_monthly_prizes">0</h3>
             </div>
             <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-indigo-500">
@@ -242,7 +242,6 @@
         let logoutTimer = null;
         let timeLeft = 1800;
 
-        // モーダル関連の要素
         const modal = document.getElementById('breakdown_modal');
         const modalContent = document.getElementById('modal_content');
         const modalTitle = document.getElementById('modal_title');
@@ -313,42 +312,61 @@
         }
 
         function setupFilters() {
-            const months = new Set();
-            const services = new Set();
+            const monthsSet = new Set();
+            const servicesSet = new Set();
             records.forEach(r => {
                 const p = r.date.split('/');
-                months.add(`${p[0]}/${parseInt(p[1])}`);
-                services.add(r.service);
+                if(p.length >= 2) {
+                    monthsSet.add(`${p[0]}/${p[1]}`);
+                }
+                servicesSet.add(r.service);
             });
             
             const mf = document.getElementById('monthFilter');
             const sf = document.getElementById('serviceFilter');
             const dl = document.getElementById('service_suggestions');
-            const mVal = mf.value;
-            const sVal = sf.value;
-
-            mf.innerHTML = Array.from(months).sort().reverse().map(m => `<option value="${m}">${m.split('/')[0]}年 ${m.split('/')[1]}月</option>`).join('') || `<option value="${new Date().getFullYear()}/${new Date().getMonth()+1}">今月</option>`;
-            sf.innerHTML = '<option value="all">全サービス表示</option>' + Array.from(services).sort().map(s => `<option value="${s}">${s}</option>`).join('');
-            dl.innerHTML = Array.from(services).sort().map(s => `<option value="${s}"></option>`).join('');
-
-            mf.value = mVal || mf.firstChild?.value || "";
-            sf.value = sVal || "all";
-        }
-
-        // 月別の内訳を表示する関数
-        function showBreakdown() {
-            const currentMonthStr = document.getElementById('monthFilter').value;
-            const [y, m] = currentMonthStr.split('/');
             
-            // サービスごとに集計
-            const breakdown = {};
-            records.filter(r => r.date.includes(currentMonthStr)).forEach(r => {
-                breakdown[r.service] = (breakdown[r.service] || 0) + Number(r.cash || 0);
+            const currentMVal = mf.value;
+            const currentSVal = sf.value;
+
+            // 月のリスト作成
+            const months = Array.from(monthsSet).sort((a, b) => {
+                const [y1, m1] = a.split('/').map(Number);
+                const [y2, m2] = b.split('/').map(Number);
+                return y2 !== y1 ? y2 - y1 : m2 - m1;
             });
 
-            // 金額順にソート
-            const sorted = Object.entries(breakdown).sort((a, b) => b[1] - a[1]);
+            if (months.length === 0) {
+                const now = new Date();
+                months.push(`${now.getFullYear()}/${now.getMonth() + 1}`);
+            }
 
+            mf.innerHTML = months.map(m => {
+                const [y, mm] = m.split('/');
+                return `<option value="${m}">${y}年 ${mm}月</option>`;
+            }).join('');
+
+            sf.innerHTML = '<option value="all">全サービス表示</option>' + Array.from(servicesSet).sort().map(s => `<option value="${s}">${s}</option>`).join('');
+            dl.innerHTML = Array.from(servicesSet).sort().map(s => `<option value="${s}"></option>`).join('');
+
+            // 値を復元、なければ最新月
+            mf.value = currentMVal && months.includes(currentMVal) ? currentMVal : months[0];
+            sf.value = currentSVal || "all";
+        }
+
+        function showBreakdown() {
+            const mFilterVal = document.getElementById('monthFilter').value;
+            const [y, m] = mFilterVal.split('/');
+            
+            const breakdown = {};
+            records.forEach(r => {
+                const p = r.date.split('/');
+                if(`${p[0]}/${p[1]}` === mFilterVal) {
+                    breakdown[r.service] = (breakdown[r.service] || 0) + Number(r.cash || 0);
+                }
+            });
+
+            const sorted = Object.entries(breakdown).sort((a, b) => b[1] - a[1]);
             modalTitle.innerText = `${y}年 ${m}月の課金内訳`;
             
             if (sorted.length === 0) {
@@ -366,7 +384,6 @@
             modal.classList.add('modal-enter-active');
         }
 
-        // モーダルを閉じる
         function closeModal() {
             modal.style.display = 'none';
         }
@@ -383,25 +400,38 @@
             let tCash = 0, mCash = 0, mPrizes = 0;
 
             records.forEach(r => {
-                if (!currentBalances[r.service]) currentBalances[r.service] = r.runningBalance;
-                if (!serviceSummary[r.service]) serviceSummary[r.service] = { invest: 0, totalEarnedPts: 0 };
+                // 最新残高（recordsは逆順なので、最初に現れたものが最新）
+                if (currentBalances[r.service] === undefined) currentBalances[r.service] = r.runningBalance;
                 
+                // 生涯分析用
+                if (!serviceSummary[r.service]) serviceSummary[r.service] = { invest: 0, totalEarnedPts: 0 };
                 serviceSummary[r.service].invest += Number(r.cash || 0);
                 serviceSummary[r.service].totalEarnedPts += (Number(r.added || 0) + Number(r.won || 0));
                 
                 tCash += Number(r.cash || 0);
-                if(r.date.includes(m)) {
+
+                // 選択月フィルタ
+                const p = r.date.split('/');
+                if(`${p[0]}/${p[1]}` === m) {
                     mCash += Number(r.cash || 0);
                     if(r.prize) mPrizes++;
                 }
             });
 
+            // 統計表示更新
             document.getElementById('stat_monthly_cash').innerText = `¥${mCash.toLocaleString()}`;
             document.getElementById('stat_monthly_prizes').innerText = mPrizes;
             document.getElementById('stat_total_cash').innerText = `¥${tCash.toLocaleString()}`;
-            document.getElementById('label_month').innerText = `${m.split('/')[1] || ''}月の支払額`;
+            
+            const [yLabel, mLabel] = m.split('/');
+            document.getElementById('label_month').innerText = `${mLabel}月の支払額`;
 
-            const filtered = records.filter(r => r.date.includes(m) && (s === 'all' || r.service === s));
+            // 履歴テーブル
+            const filtered = records.filter(r => {
+                const p = r.date.split('/');
+                return `${p[0]}/${p[1]}` === m && (s === 'all' || r.service === s);
+            });
+
             document.getElementById('historyBody').innerHTML = filtered.map(r => {
                 const add = (Number(r.added || 0) + Number(r.won || 0));
                 const addText = add > 0 ? `<div class="text-[10px] text-slate-400 font-bold mb-0.5">+${add.toLocaleString()}</div>` : '';
@@ -447,7 +477,7 @@
                     return Number(p[0]) === y && Number(p[1]) === m && Number(p[2]) === d;
                 });
                 const isToday = new Date().toLocaleDateString('ja-JP') === new Date(y, m-1, d).toLocaleDateString('ja-JP');
-                const spentServices = [...new Set(dayRecs.filter(r => Number(r.spent || 0) > 0).map(r => r.service))];
+                const spentServices = [...new Set(dayRecs.filter(r => Number(r.spent || 0) > 0 || Number(r.cash || 0) > 0).map(r => r.service))];
 
                 html += `
                     <div class="calendar-day ${isToday ? 'calendar-today' : ''}">
