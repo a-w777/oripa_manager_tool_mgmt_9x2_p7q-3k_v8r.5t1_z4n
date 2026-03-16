@@ -166,10 +166,15 @@
 
             <div class="lg:col-span-2 card !p-0 overflow-hidden self-start">
                 <div class="p-4 border-b bg-slate-50 flex flex-wrap gap-3 justify-between items-center">
-                    <div class="flex gap-2 items-center">
+                    <div class="flex gap-2 items-center flex-wrap">
                         <select id="monthFilter" class="p-1.5 border rounded-lg text-sm bg-white outline-none font-bold shadow-sm"></select>
                         <select id="serviceFilter" class="p-1.5 border rounded-lg text-sm bg-white outline-none font-bold shadow-sm">
-                            <option value="all">全サービス表示</option>
+                            <option value="all">全サービス</option>
+                        </select>
+                        <select id="limitFilter" class="p-1.5 border rounded-lg text-sm bg-white outline-none font-bold shadow-sm">
+                            <option value="20">20件表示</option>
+                            <option value="150">150件表示</option>
+                            <option value="all">全件表示</option>
                         </select>
                     </div>
                 </div>
@@ -378,6 +383,7 @@
         function renderUI() {
             const m = document.getElementById('monthFilter').value;
             const s = document.getElementById('serviceFilter').value;
+            const limit = document.getElementById('limitFilter').value; // 表示件数フィルターの取得
             const currentBalances = {};
             const serviceSummary = {};
             let tCash = 0, mCash = 0, mPrizes = 0;
@@ -410,10 +416,15 @@
             const [yLabel, mLabel] = m.split('/');
             document.getElementById('label_month').innerText = `${mLabel}月の支払額`;
 
-            const filtered = records.filter(r => {
+            let filtered = records.filter(r => {
                 const p = r.date.split('/');
                 return `${p[0]}/${p[1]}` === m && (s === 'all' || r.service === s);
             });
+
+            // 表示件数の制限を適用
+            if (limit !== 'all') {
+                filtered = filtered.slice(0, parseInt(limit));
+            }
 
             document.getElementById('historyBody').innerHTML = filtered.map(r => {
                 const add = (Number(r.added || 0) + Number(r.won || 0));
@@ -457,7 +468,10 @@
                     return Number(p[0]) === y && Number(p[1]) === m && Number(p[2]) === d;
                 });
                 const isToday = new Date().toLocaleDateString('ja-JP') === new Date(y, m-1, d).toLocaleDateString('ja-JP');
-                const spentServices = [...new Set(dayRecs.filter(r => Number(r.spent || 0) > 0 || Number(r.cash || 0) > 0).map(r => r.service))];
+                
+                // 【修正】支払額（cash）は無視し、消費pt（spent）があるサービスのみを抽出
+                const spentServices = [...new Set(dayRecs.filter(r => Number(r.spent || 0) > 0).map(r => r.service))];
+                
                 html += `
                     <div class="calendar-day ${isToday ? 'calendar-today' : ''}">
                         <div class="day-num">${d}</div>
@@ -579,6 +593,7 @@
 
         document.getElementById('monthFilter').addEventListener('change', renderUI);
         document.getElementById('serviceFilter').addEventListener('change', renderUI);
+        document.getElementById('limitFilter').addEventListener('change', renderUI); // 新しく追加した表示件数フィルターのイベント
         
         ['mousedown', 'keydown', 'touchstart'].forEach(type => {
             document.addEventListener(type, () => { if (user) startLogoutTimer(); });
