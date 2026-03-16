@@ -1,20 +1,22 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>オリパ管理マネージャー Pro Cloud</title>
-    
+
     <!-- PWA用のメタタグ -->
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="オリパ管理Pro">
     <meta name="theme-color" content="#4338ca">
-    
+
     <!-- Web App Manifest (インライン化はできないため外部ファイルを想定) -->
     <!-- 本来はmanifest.jsonという別ファイルが必要ですが、以下のJSで動的に生成・登録する手法を組み込みます -->
-    <link id="manifest-link" rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIuOCquODquODkeeuoeeQhuODnuODjeODvOOCuOODvCBQcm8gQ2xvdWQiLAogICJzaG9ydF9uYW1lIjogIuOCquODquODkeeuoeeQhuODuVBybyIsCiAgImRlc2NyaXB0aW9uIjogIuOCquODquODkeOBruWPluW8leOCkuOCrOODqeOCpuODieOBp+euoeeQhuOBl+OBvuOBmSIsCiAgInN0YXJ0X3VybCI6ICIuLyIsCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiI2Y4ZmFmYyIsCiAgInRoZW1lX2NvbG9yIjogIiM0MzM4Y2EiLAogICJpY29ucyI6IFsKICAgIHsKICAgICAgInNyYyI6ICJpY29uLnBuZyIsCiAgICAgICJzaXplcyI6ICIxOTJ4MTkyIiwKICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIgogICAgfSwKICAgIHsKICAgICAgInNyYyI6ICJpY29uLnBuZyIsCiAgICAgICJzaXplcyI6ICI1MTJ4NTEyIiwKICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIgogICAgfQogIF0KfQ==">
+    <link id="manifest-link" rel="manifest"
+        href="data:application/json;base64,ewogICJuYW1lIjogIuOCquODquODkeeuoeeQhuODnuODjeODvOOCuOODvCBQcm8gQ2xvdWQiLAogICJzaG9ydF9uYW1lIjogIuOCquODquODkeeuoeeQhuODuVBybyIsCiAgImRlc2NyaXB0aW9uIjogIuOCquODquODkeOBruWPluW8leOCkuOCrOODqeOCpuODieOBp+euoeeQhuOBl+OBvuOBmSIsCiAgInN0YXJ0X3VybCI6ICIuLyIsCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiI2Y4ZmFmYyIsCiAgInRoZW1lX2NvbG9yIjogIiM0MzM4Y2EiLAogICJpY29ucyI6IFsKICAgIHsKICAgICAgInNyYyI6ICJpY29uLnBuZyIsCiAgICAgICJzaXplcyI6ICIxOTJ4MTkyIiwKICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIgogICAgfSwKICAgIHsKICAgICAgInNyYyI6ICJpY29uLnBuZyIsCiAgICAgICJzaXplcyI6ICI1MTJ4NTEyIiwKICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIgogICAgfQogIF0KfQ==">
 
     <link rel="icon" href="fabicon.png" sizes="any">
     <link rel="icon" href="icon.png" type="image/png">
@@ -24,23 +26,43 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap');
-        body { font-family: 'Noto Sans JP', sans-serif; -webkit-tap-highlight-color: transparent; }
-        .loading-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: white; display: flex; align-items: center;
-            justify-content: center; z-index: 1000; transition: opacity 0.5s;
+
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            -webkit-tap-highlight-color: transparent;
         }
-        .card { @apply bg-white p-6 rounded-2xl shadow-md border border-slate-200; }
-        .input-field { @apply w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-indigo-500 transition; }
-        
-        .calendar-grid { 
-            display: grid; 
-            grid-template-columns: repeat(7, 1fr); 
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            transition: opacity 0.5s;
+        }
+
+        .card {
+            @apply bg-white p-6 rounded-2xl shadow-md border border-slate-200;
+        }
+
+        .input-field {
+            @apply w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-indigo-500 transition;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
             border-top: 1px solid #cbd5e1;
             border-left: 1px solid #cbd5e1;
             @apply rounded-lg overflow-hidden;
         }
-        .calendar-header { 
+
+        .calendar-header {
             display: flex;
             align-items: center;
             justify-content: center;
@@ -52,7 +74,8 @@
             border-right: 1px solid #cbd5e1;
             border-bottom: 1px solid #cbd5e1;
         }
-        .calendar-day { 
+
+        .calendar-day {
             padding: 3px;
             height: 70px;
             background-color: #ffffff;
@@ -60,27 +83,51 @@
             border-bottom: 1px solid #cbd5e1;
             @apply text-[11px] transition flex flex-col gap-0.5 overflow-y-auto;
         }
-        .calendar-day:hover { background-color: #f1f5f9; }
-        .calendar-tag { 
+
+        .calendar-day:hover {
+            background-color: #f1f5f9;
+        }
+
+        .calendar-tag {
             font-size: 9px;
             line-height: 1.2;
-            @apply block w-full px-1.5 py-0.5 rounded font-bold bg-indigo-50 text-indigo-600 border border-indigo-100 truncate mb-0.5; 
+            @apply block w-full px-1.5 py-0.5 rounded font-bold bg-indigo-50 text-indigo-600 border border-indigo-100 truncate mb-0.5;
         }
-        .calendar-today { background-color: #f5f3ff; }
-        .calendar-today .day-num { @apply bg-indigo-600 text-white rounded-full w-5 h-5 flex items-center justify-center; }
-        .day-num { @apply text-[10px] mb-1 px-1 font-bold text-slate-400; }
 
-        .modal-enter { opacity: 0; transform: scale(0.95); }
-        .modal-enter-active { opacity: 1; transform: scale(1); transition: all 0.2s ease-out; }
+        .calendar-today {
+            background-color: #f5f3ff;
+        }
+
+        .calendar-today .day-num {
+            @apply bg-indigo-600 text-white rounded-full w-5 h-5 flex items-center justify-center;
+        }
+
+        .day-num {
+            @apply text-[10px] mb-1 px-1 font-bold text-slate-400;
+        }
+
+        .modal-enter {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+
+        .modal-enter-active {
+            opacity: 1;
+            transform: scale(1);
+            transition: all 0.2s ease-out;
+        }
     </style>
 </head>
+
 <body class="bg-slate-50 min-h-screen text-slate-800">
 
     <div id="auth_overlay" class="loading-overlay flex-col gap-6">
-        <div id="loader_icon" class="animate-spin h-12 w-12 border-4 border-indigo-600 border-t-transparent rounded-full"></div>
+        <div id="loader_icon"
+            class="animate-spin h-12 w-12 border-4 border-indigo-600 border-t-transparent rounded-full"></div>
         <div id="login_ui" class="hidden flex flex-col items-center gap-4">
             <h1 class="text-2xl font-black text-indigo-700">💎 オリパ管理 Pro</h1>
-            <button id="googleLoginBtn" class="flex items-center gap-3 bg-white border border-slate-300 px-6 py-3 rounded-full font-bold shadow-sm hover:shadow-md transition active:scale-95">
+            <button id="googleLoginBtn"
+                class="flex items-center gap-3 bg-white border border-slate-300 px-6 py-3 rounded-full font-bold shadow-sm hover:shadow-md transition active:scale-95">
                 <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20">
                 Googleでログイン
             </button>
@@ -89,7 +136,8 @@
     </div>
 
     <!-- 削除/修正用ダイアログ -->
-    <div id="breakdown_modal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+    <div id="breakdown_modal"
+        class="fixed inset-0 z-[100] hidden items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
         <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden transform transition-all">
             <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-indigo-50">
                 <h3 id="modal_title" class="text-lg font-black text-indigo-900">課金内訳</h3>
@@ -104,22 +152,28 @@
 
     <nav class="bg-indigo-700 text-white p-4 shadow-lg sticky top-0 z-50">
         <div class="max-w-6xl mx-auto flex justify-between items-center">
-            <h1 class="text-xl font-bold flex items-center gap-2"><span>💎</span> <span class="hidden sm:inline">オリパ管理 Pro</span><span class="sm:hidden">管理 Pro</span></h1>
+            <h1 class="text-xl font-bold flex items-center gap-2"><span>💎</span> <span class="hidden sm:inline">オリパ管理
+                    Pro</span><span class="sm:hidden">管理 Pro</span></h1>
             <div class="flex items-center gap-2">
                 <span id="auto_logout_timer" class="text-[9px] bg-indigo-600 px-2 py-1 rounded opacity-70">30:00</span>
-                <button id="logoutBtn" class="text-[10px] bg-indigo-800 hover:bg-indigo-900 px-2 py-1 rounded border border-indigo-600">ログアウト</button>
+                <button id="logoutBtn"
+                    class="text-[10px] bg-indigo-800 hover:bg-indigo-900 px-2 py-1 rounded border border-indigo-600">ログアウト</button>
                 <img id="user_photo" class="h-8 w-8 rounded-full border-2 border-white hidden">
             </div>
         </div>
     </nav>
 
     <main id="app_content" class="max-w-6xl mx-auto p-4 md:p-6 space-y-6 opacity-0 transition-opacity duration-500">
-        
+
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-            <div id="trigger_breakdown" class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-emerald-500 cursor-pointer hover:bg-emerald-50 transition active:scale-95 group">
+            <div id="trigger_breakdown"
+                class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-emerald-500 cursor-pointer hover:bg-emerald-50 transition active:scale-95 group">
                 <p class="text-xs text-slate-500 font-bold mb-1 flex items-center justify-center gap-1">
                     <span id="label_month">支払額</span>
-                    <svg class="w-3 h-3 text-emerald-400 group-hover:translate-y-0.5 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path></svg>
+                    <svg class="w-3 h-3 text-emerald-400 group-hover:translate-y-0.5 transition" fill="none"
+                        stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path>
+                    </svg>
                 </p>
                 <h3 class="text-2xl font-black text-slate-700" id="stat_monthly_cash">¥0</h3>
             </div>
@@ -144,52 +198,61 @@
                         <input type="hidden" id="editing_id">
                         <div>
                             <label class="block text-xs font-bold text-slate-500 mb-1">サービス名</label>
-                            <input type="text" id="serviceName" list="service_suggestions" class="input-field" placeholder="DOPAなど" required>
+                            <input type="text" id="serviceName" list="service_suggestions" class="input-field"
+                                placeholder="DOPAなど" required>
                             <datalist id="service_suggestions"></datalist>
                         </div>
                         <div class="grid grid-cols-2 gap-3 bg-indigo-50 p-3 rounded-lg">
                             <div>
                                 <label class="block text-[10px] font-bold text-indigo-400 mb-1">支払額(円)</label>
-                                <input type="number" id="cashAmount" placeholder="0" class="p-2 border rounded-lg w-full outline-none">
+                                <input type="number" id="cashAmount" placeholder="0"
+                                    class="p-2 border rounded-lg w-full outline-none">
                             </div>
                             <div>
                                 <label class="block text-[10px] font-bold text-indigo-400 mb-1">チャージpts</label>
-                                <input type="number" id="addedPoints" placeholder="0" class="p-2 border rounded-lg w-full outline-none">
+                                <input type="number" id="addedPoints" placeholder="0"
+                                    class="p-2 border rounded-lg w-full outline-none">
                             </div>
                         </div>
                         <div class="grid grid-cols-2 gap-3 bg-orange-50 p-3 rounded-lg">
                             <div>
                                 <label class="block text-[10px] font-bold text-orange-400 mb-1">消費pts</label>
-                                <input type="number" id="spentPoints" placeholder="0" class="p-2 border rounded-lg w-full outline-none">
+                                <input type="number" id="spentPoints" placeholder="0"
+                                    class="p-2 border rounded-lg w-full outline-none">
                             </div>
                             <div>
                                 <label class="block text-[10px] font-bold text-orange-400 mb-1">当選pts</label>
-                                <input type="number" id="winPoints" placeholder="0" class="p-2 border rounded-lg w-full outline-none">
+                                <input type="number" id="winPoints" placeholder="0"
+                                    class="p-2 border rounded-lg w-full outline-none">
                             </div>
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-500 mb-1">高額当選アイテム（任意）</label>
                             <input type="text" id="highPrize" placeholder="アイテム名" class="input-field">
                         </div>
-                        <button type="submit" id="submitBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-xl shadow-lg transition active:scale-95">データを保存</button>
+                        <button type="submit" id="submitBtn"
+                            class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-xl shadow-lg transition active:scale-95">データを保存</button>
                     </form>
                 </div>
 
                 <div class="card">
                     <h2 class="text-xs font-bold text-slate-400 uppercase mb-4 tracking-widest">💳 現在の最新残高</h2>
-                    <div id="service_balances" class="space-y-2 max-h-[300px] overflow-y-auto text-sm"></div>
+                    <div id="service_balances" class="space-y-2 text-sm"></div>
                 </div>
             </div>
 
             <div class="lg:col-span-2 card !p-0 overflow-hidden self-start">
                 <div class="p-4 border-b bg-slate-50 flex flex-wrap gap-3 justify-between items-center">
                     <div class="flex gap-2 items-center flex-wrap">
-                        <select id="monthFilter" class="p-1.5 border rounded-lg text-sm bg-white outline-none font-bold shadow-sm"></select>
-                        <select id="serviceFilter" class="p-1.5 border rounded-lg text-sm bg-white outline-none font-bold shadow-sm">
+                        <select id="monthFilter"
+                            class="p-1.5 border rounded-lg text-sm bg-white outline-none font-bold shadow-sm"></select>
+                        <select id="serviceFilter"
+                            class="p-1.5 border rounded-lg text-sm bg-white outline-none font-bold shadow-sm">
                             <option value="all">全サービス</option>
                         </select>
-                        <select id="limitFilter" class="p-1.5 border rounded-lg text-sm bg-white outline-none font-bold shadow-sm">
-                            <option value="20">20件</option>
+                        <select id="limitFilter"
+                            class="p-1.5 border rounded-lg text-sm bg-white outline-none font-bold shadow-sm">
+                            <option value="15">15件</option>
                             <option value="150">150件</option>
                             <option value="all">全件</option>
                         </select>
@@ -197,7 +260,8 @@
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left">
-                        <thead class="bg-slate-50 text-[10px] text-slate-400 font-black border-b uppercase tracking-wider">
+                        <thead
+                            class="bg-slate-50 text-[10px] text-slate-400 font-black border-b uppercase tracking-wider">
                             <tr>
                                 <th class="p-4">日付/サービス</th>
                                 <th class="p-4 text-center">支払額</th>
@@ -216,7 +280,8 @@
             <div class="card">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                     <h2 class="text-xl font-bold flex items-center gap-2">📅 カレンダー</h2>
-                    <div id="calendar_label" class="text-sm font-bold text-indigo-600 bg-indigo-50 px-4 py-1.5 rounded-full"></div>
+                    <div id="calendar_label"
+                        class="text-sm font-bold text-indigo-600 bg-indigo-50 px-4 py-1.5 rounded-full"></div>
                 </div>
                 <div id="calendar_container" class="calendar-grid"></div>
             </div>
@@ -312,7 +377,7 @@
             const m = Math.floor(timeLeft / 60);
             const s = timeLeft % 60;
             const timerEl = document.getElementById('auto_logout_timer');
-            if(timerEl) timerEl.innerText = `${m}:${s.toString().padStart(2, '0')}`;
+            if (timerEl) timerEl.innerText = `${m}:${s.toString().padStart(2, '0')}`;
         }
 
         onAuthStateChanged(auth, (u) => {
@@ -343,7 +408,7 @@
             unsubscribeSync = onSnapshot(colRef, (snapshot) => {
                 const raw = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
                     .sort((a, b) => parseInt(a.id) - parseInt(b.id));
-                
+
                 const balances = {};
                 records = raw.map(r => {
                     balances[r.service] = (balances[r.service] || 0) + (Number(r.added || 0) + Number(r.won || 0) - Number(r.spent || 0));
@@ -353,7 +418,7 @@
                 setupFilters();
                 renderUI();
                 document.getElementById('auth_overlay').classList.add('opacity-0');
-                setTimeout(() => { if(user) document.getElementById('auth_overlay').style.display = 'none'; }, 500);
+                setTimeout(() => { if (user) document.getElementById('auth_overlay').style.display = 'none'; }, 500);
                 document.getElementById('app_content').classList.remove('opacity-0');
             });
         }
@@ -363,14 +428,14 @@
             const servicesSet = new Set();
             records.forEach(r => {
                 const p = r.date.split('/');
-                if(p.length >= 2) monthsSet.add(`${p[0]}/${p[1]}`);
+                if (p.length >= 2) monthsSet.add(`${p[0]}/${p[1]}`);
                 servicesSet.add(r.service);
             });
-            
+
             const mf = document.getElementById('monthFilter');
             const sf = document.getElementById('serviceFilter');
             const dl = document.getElementById('service_suggestions');
-            
+
             const currentMVal = mf.value;
             const currentSVal = sf.value;
 
@@ -403,14 +468,14 @@
             const breakdown = {};
             records.forEach(r => {
                 const p = r.date.split('/');
-                if(`${p[0]}/${p[1]}` === mFilterVal) {
+                if (`${p[0]}/${p[1]}` === mFilterVal) {
                     breakdown[r.service] = (breakdown[r.service] || 0) + Number(r.cash || 0);
                 }
             });
 
             const sorted = Object.entries(breakdown).sort((a, b) => b[1] - a[1]);
             modalTitle.innerText = `${y}年 ${m}月の課金内訳`;
-            
+
             if (sorted.length === 0) {
                 modalContent.innerHTML = `<p class="text-center text-slate-400 py-8">データがありません</p>`;
             } else {
@@ -427,7 +492,7 @@
         function closeModal() { modal.style.display = 'none'; }
         triggerBreakdown.addEventListener('click', showBreakdown);
         document.getElementById('close_modal').addEventListener('click', closeModal);
-        modal.addEventListener('click', (e) => { if(e.target === modal) closeModal(); });
+        modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
 
         function renderUI() {
             const m = document.getElementById('monthFilter').value;
@@ -439,17 +504,17 @@
 
             records.forEach(r => {
                 if (currentBalances[r.service] === undefined) currentBalances[r.service] = r.runningBalance;
-                
+
                 if (!serviceSummary[r.service]) serviceSummary[r.service] = { invest: 0, totalEarnedPts: 0, currentBalance: 0 };
                 serviceSummary[r.service].invest += Number(r.cash || 0);
                 serviceSummary[r.service].totalEarnedPts += (Number(r.added || 0) + Number(r.won || 0));
-                
+
                 tCash += Number(r.cash || 0);
 
                 const p = r.date.split('/');
-                if(`${p[0]}/${p[1]}` === m) {
+                if (`${p[0]}/${p[1]}` === m) {
                     mCash += Number(r.cash || 0);
-                    if(r.prize) mPrizes++;
+                    if (r.prize) mPrizes++;
                 }
             });
 
@@ -460,7 +525,7 @@
             document.getElementById('stat_monthly_cash').innerText = `¥${mCash.toLocaleString()}`;
             document.getElementById('stat_monthly_prizes').innerText = mPrizes;
             document.getElementById('stat_total_cash').innerText = `¥${tCash.toLocaleString()}`;
-            
+
             const [yLabel, mLabel] = m.split('/');
             document.getElementById('label_month').innerText = `${mLabel}月の支払額`;
 
@@ -507,16 +572,16 @@
             document.getElementById('calendar_label').innerText = `${y}年 ${m}月`;
             const first = new Date(y, m - 1, 1).getDay();
             const last = new Date(y, m, 0).getDate();
-            let html = ['日','月','火','水','木','金','土'].map(d => `<div class="calendar-header">${d}</div>`).join('');
-            for(let i=0; i<first; i++) html += `<div class="calendar-day bg-slate-50/50"></div>`;
-            for(let d=1; d<=last; d++) {
+            let html = ['日', '月', '火', '水', '木', '金', '土'].map(d => `<div class="calendar-header">${d}</div>`).join('');
+            for (let i = 0; i < first; i++) html += `<div class="calendar-day bg-slate-50/50"></div>`;
+            for (let d = 1; d <= last; d++) {
                 const dayRecs = records.filter(r => {
                     const p = r.date.split('/');
                     return Number(p[0]) === y && Number(p[1]) === m && Number(p[2]) === d;
                 });
-                const isToday = new Date().toLocaleDateString('ja-JP') === new Date(y, m-1, d).toLocaleDateString('ja-JP');
+                const isToday = new Date().toLocaleDateString('ja-JP') === new Date(y, m - 1, d).toLocaleDateString('ja-JP');
                 const spentServices = [...new Set(dayRecs.filter(r => Number(r.spent || 0) > 0).map(r => r.service))];
-                
+
                 html += `
                     <div class="calendar-day ${isToday ? 'calendar-today' : ''}">
                         <div class="day-num">${d}</div>
@@ -544,13 +609,13 @@
                         { label: '現在の残高', data: labels.map(l => summary[l].currentBalance), backgroundColor: '#fbbf24', borderRadius: 6 }
                     ]
                 },
-                options: { 
-                    indexAxis: 'y', 
-                    responsive: true, 
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
                         legend: { position: 'top', labels: { font: { weight: 'bold' } } },
-                        tooltip: { 
+                        tooltip: {
                             padding: 12,
                             callbacks: {
                                 label: (ctx) => {
@@ -615,10 +680,11 @@
         document.getElementById('monthFilter').addEventListener('change', renderUI);
         document.getElementById('serviceFilter').addEventListener('change', renderUI);
         document.getElementById('limitFilter').addEventListener('change', renderUI);
-        
+
         ['mousedown', 'keydown', 'touchstart'].forEach(type => {
             document.addEventListener(type, () => { if (user) startLogoutTimer(); });
         });
     </script>
 </body>
+
 </html>
