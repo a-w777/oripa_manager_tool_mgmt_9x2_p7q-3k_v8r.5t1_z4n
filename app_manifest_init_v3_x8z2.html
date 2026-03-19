@@ -256,6 +256,10 @@
                             <option value="150">150件</option>
                             <option value="all">全件</option>
                         </select>
+                        <button id="downloadCsvBtn" class="p-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-bold shadow-sm flex items-center gap-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                            CSV出力
+                        </button>
                     </div>
                 </div>
                 <div class="overflow-x-auto">
@@ -680,6 +684,57 @@
         document.getElementById('monthFilter').addEventListener('change', renderUI);
         document.getElementById('serviceFilter').addEventListener('change', renderUI);
         document.getElementById('limitFilter').addEventListener('change', renderUI);
+
+        function downloadCSV() {
+            const m = document.getElementById('monthFilter').value;
+            const s = document.getElementById('serviceFilter').value;
+            const limit = document.getElementById('limitFilter').value;
+
+            let filtered = records.filter(r => {
+                const p = r.date.split('/');
+                return `${p[0]}/${p[1]}` === m && (s === 'all' || r.service === s);
+            });
+
+            if (limit !== 'all') {
+                filtered = filtered.slice(0, parseInt(limit));
+            }
+
+            if (filtered.length === 0) {
+                alert("出力するデータがありません。");
+                return;
+            }
+
+            // ヘッダー
+            let csvContent = "日付,サービス,支払額(円),消費PT,残高(pt)\n";
+
+            // データ行
+            filtered.forEach(r => {
+                const line = [
+                    r.date,
+                    r.service,
+                    Number(r.cash || 0),
+                    Number(r.spent || 0),
+                    Number(r.runningBalance || 0)
+                ].join(",");
+                csvContent += line + "\n";
+            });
+
+            // WindowsのExcel対策 (BOM)
+            const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+            const blob = new Blob([bom, csvContent], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+
+            const link = document.createElement("a");
+            const [y, mm] = m.split('/');
+            link.setAttribute("href", url);
+            link.setAttribute("download", `利用履歴_${y}年${mm}月.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        document.getElementById('downloadCsvBtn').addEventListener('click', downloadCSV);
 
         ['mousedown', 'keydown', 'touchstart'].forEach(type => {
             document.addEventListener(type, () => { if (user) startLogoutTimer(); });
