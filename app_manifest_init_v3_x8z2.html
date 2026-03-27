@@ -430,10 +430,16 @@
         function setupFilters() {
             const monthsSet = new Set();
             const servicesSet = new Set();
+            const recentServices = [];
+            const seenRecentServices = new Set();
             records.forEach(r => {
                 const p = r.date.split('/');
                 if (p.length >= 2) monthsSet.add(`${p[0]}/${p[1]}`);
                 servicesSet.add(r.service);
+                if (!seenRecentServices.has(r.service)) {
+                    seenRecentServices.add(r.service);
+                    recentServices.push(r.service);
+                }
             });
 
             const mf = document.getElementById('monthFilter');
@@ -460,7 +466,7 @@
             }).join('');
 
             sf.innerHTML = '<option value="all">全サービス</option>' + Array.from(servicesSet).sort().map(s => `<option value="${s}">${s}</option>`).join('');
-            dl.innerHTML = Array.from(servicesSet).sort().map(s => `<option value="${s}"></option>`).join('');
+            dl.innerHTML = recentServices.map(s => `<option value="${s}"></option>`).join('');
 
             mf.value = currentMVal && months.includes(currentMVal) ? currentMVal : months[0];
             sf.value = currentSVal || "all";
@@ -705,7 +711,7 @@
             }
 
             // ヘッダー
-            let csvContent = "日付,サービス,支払額(円),消費PT,残高(pt)\n";
+            let csvContent = "日付,サービス,支払額(円),消費PT,当選PT,残高(pt)\n";
 
             // データ行
             filtered.forEach(r => {
@@ -714,6 +720,7 @@
                     r.service,
                     Number(r.cash || 0),
                     Number(r.spent || 0),
+                    Number(r.won || 0),
                     Number(r.runningBalance || 0)
                 ].join(",");
                 csvContent += line + "\n";
