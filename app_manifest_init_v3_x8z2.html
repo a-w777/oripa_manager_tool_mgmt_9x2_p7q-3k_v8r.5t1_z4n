@@ -623,9 +623,12 @@
                     indexAxis: 'y',
                     responsive: true,
                     maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
                     plugins: {
                         legend: { position: 'top', labels: { font: { weight: 'bold' } } },
                         tooltip: {
+                            mode: 'index',
+                            intersect: false,
                             padding: 12,
                             callbacks: {
                                 label: (ctx) => {
